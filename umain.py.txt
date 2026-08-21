@@ -1,1 +1,1 @@
-def get_signal(market_data): if market_data == 'up': return 'UP' elif market_data == 'down': return 'DOWN' else: return 'NO TRADE'
+def get_signal(market_data): if market_data == "up": return "⬆️ UP" elif market_data == "down": return "⬇️ DOWN" else: return "⏸️ NO TRADE" signal = get_signal("up") print(signal)
