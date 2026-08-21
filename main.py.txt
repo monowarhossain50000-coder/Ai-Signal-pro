@@ -1,1 +1,4 @@
-from flask import Flask, render_template, app = Flask (name), @app.route ("/"), def home ():, signal = "⬆️ UP", return render_template ("index.html", signal = signal)। if name == "main": app.run (debug = True)
+from flask import Flask, render_template.
+app equal Flask underscore underscore name underscore underscore
+@ app.route("/")
+def home():
