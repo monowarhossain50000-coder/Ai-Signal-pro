@@ -4,14 +4,15 @@ from datetime import datetime, timezone
 
 from flask import Flask, render_template, jsonify, request
 
+
 app = Flask(__name__)
 
 API_KEY = os.getenv("TWELVEDATA_API_KEY")
 
 
-# ============================================================
+# =========================================================
 # REAL MARKET PAIRS
-# ============================================================
+# =========================================================
 
 REAL_PAIRS = [
     "EUR/USD",
@@ -60,16 +61,11 @@ REAL_PAIRS = [
 ]
 
 
-# ============================================================
-# OTC ASSETS
-# ============================================================
+# =========================================================
+# OTC PAIRS
+# =========================================================
 
 OTC_PAIRS = [
-
-    # -------------------------
-    # FOREX OTC
-    # -------------------------
-
     "EUR/USD OTC",
     "GBP/USD OTC",
     "USD/JPY OTC",
@@ -99,16 +95,11 @@ OTC_PAIRS = [
 
     "CAD/JPY OTC",
     "CAD/CHF OTC",
-
     "CHF/JPY OTC",
 
     "NZD/JPY OTC",
     "NZD/CAD OTC",
     "NZD/CHF OTC",
-
-    # -------------------------
-    # EXOTIC OTC
-    # -------------------------
 
     "USD/BDT OTC",
     "USD/INR OTC",
@@ -123,15 +114,7 @@ OTC_PAIRS = [
     "USD/TRY OTC",
     "USD/ARS OTC",
     "USD/DZD OTC",
-
-    "BRL/USD OTC",
-    "INR/USD OTC",
-    "ARS/USD OTC",
-    "DZD/USD OTC",
-
-    # -------------------------
-    # METALS / COMMODITIES OTC
-    # -------------------------
+    "USD/BRL OTC",
 
     "XAU/USD OTC",
     "XAG/USD OTC",
@@ -139,39 +122,24 @@ OTC_PAIRS = [
     "US Crude OTC",
     "UK Brent OTC",
 
-    # -------------------------
-    # CRYPTO OTC
-    # -------------------------
-
     "BTC/USD OTC",
     "ETH/USD OTC",
     "BCH/USD OTC",
     "BNB/USD OTC",
     "XRP/USD OTC",
     "LTC/USD OTC",
-
     "ADA/USD OTC",
     "DOT/USD OTC",
     "DOGE/USD OTC",
     "SOL/USD OTC",
     "TON/USD OTC",
-
     "ETC/USD OTC",
     "ZEC/USD OTC",
     "TRX/USD OTC",
-
     "AXS/USD OTC",
     "AVAX/USD OTC",
     "APT/USD OTC",
     "ARB/USD OTC",
-
-    "ATO/USD OTC",
-    "BON/USD OTC",
-    "FLO/USD OTC",
-
-    # -------------------------
-    # STOCK OTC
-    # -------------------------
 
     "Microsoft OTC",
     "Intel OTC",
@@ -184,9 +152,9 @@ OTC_PAIRS = [
 ]
 
 
-# ============================================================
+# =========================================================
 # TIMEFRAMES
-# ============================================================
+# =========================================================
 
 TIMEFRAMES = {
     "1": 1,
@@ -201,9 +169,9 @@ TIMEFRAMES = {
 }
 
 
-# ============================================================
+# =========================================================
 # FOREX MARKET CLOSED CHECK
-# ============================================================
+# =========================================================
 
 def forex_weekend_closed():
 
@@ -213,20 +181,20 @@ def forex_weekend_closed():
     if now.weekday() == 5:
         return True
 
-    # Sunday before approximately 21:00 UTC
+    # Sunday before 21:00 UTC
     if now.weekday() == 6 and now.hour < 21:
         return True
 
-    # Friday after approximately 21:00 UTC
+    # Friday after 21:00 UTC
     if now.weekday() == 4 and now.hour >= 21:
         return True
 
     return False
 
 
-# ============================================================
-# EMA
-# ============================================================
+# =========================================================
+# EMA 50
+# =========================================================
 
 def calculate_ema(prices, period=50):
 
@@ -238,19 +206,17 @@ def calculate_ema(prices, period=50):
     multiplier = 2 / (period + 1)
 
     for price in prices[period:]:
-
         ema = (
             (price - ema)
             * multiplier
-            + ema
-        )
+        ) + ema
 
     return ema
 
 
-# ============================================================
-# RSI
-# ============================================================
+# =========================================================
+# RSI 14
+# =========================================================
 
 def calculate_rsi(prices, period=14):
 
@@ -264,21 +230,40 @@ def calculate_rsi(prices, period=14):
 
         change = prices[i] - prices[i - 1]
 
-        gains.append(max(change, 0))
-        losses.append(max(-change, 0))
+        gains.append(
+            max(change, 0)
+        )
 
-    avg_gain = sum(gains[:period]) / period
-    avg_loss = sum(losses[:period]) / period
+        losses.append(
+            max(-change, 0)
+        )
 
-    for i in range(period, len(gains)):
+    avg_gain = (
+        sum(gains[:period])
+        / period
+    )
+
+    avg_loss = (
+        sum(losses[:period])
+        / period
+    )
+
+    for i in range(
+        period,
+        len(gains)
+    ):
 
         avg_gain = (
-            avg_gain * (period - 1)
+            (
+                avg_gain * (period - 1)
+            )
             + gains[i]
         ) / period
 
         avg_loss = (
-            avg_loss * (period - 1)
+            (
+                avg_loss * (period - 1)
+            )
             + losses[i]
         ) / period
 
@@ -287,12 +272,14 @@ def calculate_rsi(prices, period=14):
 
     rs = avg_gain / avg_loss
 
-    return 100 - (100 / (1 + rs))
+    return 100 - (
+        100 / (1 + rs)
+    )
 
 
-# ============================================================
-# HOME
-# ============================================================
+# =========================================================
+# HOME PAGE
+# =========================================================
 
 @app.route("/")
 def home():
@@ -304,9 +291,9 @@ def home():
     )
 
 
-# ============================================================
+# =========================================================
 # MARKET API
-# ============================================================
+# =========================================================
 
 @app.route("/api/market")
 def market():
@@ -327,9 +314,9 @@ def market():
     )
 
 
-    # ========================================================
+    # =====================================================
     # OTC MARKET
-    # ========================================================
+    # =====================================================
 
     if market_type == "otc":
 
@@ -339,9 +326,11 @@ def market():
 
             "otc_available": False,
 
-            "signal": "OTC DATA UNAVAILABLE",
+            "signal":
+                "OTC DATA UNAVAILABLE",
 
-            "symbol": symbol,
+            "symbol":
+                symbol,
 
             "timeframe":
                 timeframe,
@@ -352,9 +341,9 @@ def market():
         })
 
 
-    # ========================================================
-    # REAL MARKET
-    # ========================================================
+    # =====================================================
+    # CHECK API KEY
+    # =====================================================
 
     if not API_KEY:
 
@@ -362,7 +351,8 @@ def market():
 
             "market_open": False,
 
-            "signal": "NO SIGNAL",
+            "signal":
+                "NO SIGNAL",
 
             "error":
                 "Twelve Data API key is missing."
@@ -370,13 +360,18 @@ def market():
         }), 500
 
 
+    # =====================================================
+    # CHECK REAL PAIR
+    # =====================================================
+
     if symbol not in REAL_PAIRS:
 
         return jsonify({
 
             "market_open": False,
 
-            "signal": "NO SIGNAL",
+            "signal":
+                "NO SIGNAL",
 
             "error":
                 "Invalid real-market pair."
@@ -384,13 +379,18 @@ def market():
         }), 400
 
 
+    # =====================================================
+    # CHECK TIMEFRAME
+    # =====================================================
+
     if timeframe not in TIMEFRAMES:
 
         return jsonify({
 
             "market_open": False,
 
-            "signal": "NO SIGNAL",
+            "signal":
+                "NO SIGNAL",
 
             "error":
                 "Invalid timeframe."
@@ -398,9 +398,9 @@ def market():
         }), 400
 
 
-    # ========================================================
-    # CHECK FOREX MARKET
-    # ========================================================
+    # =====================================================
+    # CHECK MARKET STATUS
+    # =====================================================
 
     if forex_weekend_closed():
 
@@ -408,9 +408,11 @@ def market():
 
             "market_open": False,
 
-            "signal": "MARKET CLOSED",
+            "signal":
+                "MARKET CLOSED",
 
-            "symbol": symbol,
+            "symbol":
+                symbol,
 
             "timeframe":
                 f"{TIMEFRAMES[timeframe]} Minute",
@@ -424,9 +426,9 @@ def market():
     minutes = TIMEFRAMES[timeframe]
 
 
-    # ========================================================
-    # NATIVE TWELVE DATA TIMEFRAMES
-    # ========================================================
+    # =====================================================
+    # GET CANDLES
+    # =====================================================
 
     if minutes in [1, 5, 15, 30, 60, 240]:
 
@@ -442,13 +444,17 @@ def market():
 
         params = {
 
-            "symbol": symbol,
+            "symbol":
+                symbol,
 
-            "interval": interval,
+            "interval":
+                interval,
 
-            "outputsize": 100,
+            "outputsize":
+                100,
 
-            "apikey": API_KEY
+            "apikey":
+                API_KEY
 
         }
 
@@ -474,25 +480,22 @@ def market():
 
                     "market_open": True,
 
-                    "signal": "NO SIGNAL",
+                    "signal":
+                        "NO SIGNAL",
 
-                    "error": data.get(
-
-                        "message",
-
-                        "Market data unavailable."
-
-                    )
+                    "error":
+                        data.get(
+                            "message",
+                            "Market data unavailable."
+                        )
 
                 }), 400
 
 
             candles = list(
-
                 reversed(
                     data["values"]
                 )
-
             )
 
 
@@ -502,28 +505,34 @@ def market():
 
                 "market_open": True,
 
-                "signal": "NO SIGNAL",
+                "signal":
+                    "NO SIGNAL",
 
-                "error": str(e)
+                "error":
+                    str(e)
 
             }), 500
 
 
-    # ========================================================
-    # BUILD 2M / 3M / 10M FROM 1M DATA
-    # ========================================================
+    # =====================================================
+    # BUILD CUSTOM TIMEFRAMES
+    # =====================================================
 
     else:
 
         params = {
 
-            "symbol": symbol,
+            "symbol":
+                symbol,
 
-            "interval": "1min",
+            "interval":
+                "1min",
 
-            "outputsize": 300,
+            "outputsize":
+                300,
 
-            "apikey": API_KEY
+            "apikey":
+                API_KEY
 
         }
 
@@ -549,45 +558,40 @@ def market():
 
                     "market_open": True,
 
-                    "signal": "NO SIGNAL",
+                    "signal":
+                        "NO SIGNAL",
 
-                    "error": data.get(
-
-                        "message",
-
-                        "Market data unavailable."
-
-                    )
+                    "error":
+                        data.get(
+                            "message",
+                            "Market data unavailable."
+                        )
 
                 }), 400
 
 
             raw = list(
-
                 reversed(
                     data["values"]
                 )
-
             )
 
 
             candles = []
-
-            step = minutes
 
 
             for i in range(
 
                 0,
 
-                len(raw) - step + 1,
+                len(raw) - minutes + 1,
 
-                step
+                minutes
 
             ):
 
                 group = raw[
-                    i:i + step
+                    i:i + minutes
                 ]
 
 
@@ -598,13 +602,17 @@ def market():
 
                     "high":
                         max(
-                            float(x["high"])
+                            float(
+                                x["high"]
+                            )
                             for x in group
                         ),
 
                     "low":
                         min(
-                            float(x["low"])
+                            float(
+                                x["low"]
+                            )
                             for x in group
                         ),
 
@@ -620,16 +628,18 @@ def market():
 
                 "market_open": True,
 
-                "signal": "NO SIGNAL",
+                "signal":
+                    "NO SIGNAL",
 
-                "error": str(e)
+                "error":
+                    str(e)
 
             }), 500
 
 
-    # ========================================================
-    # CHECK DATA
-    # ========================================================
+    # =====================================================
+    # CHECK CANDLES
+    # =====================================================
 
     if len(candles) < 60:
 
@@ -637,7 +647,8 @@ def market():
 
             "market_open": True,
 
-            "signal": "NO SIGNAL",
+            "signal":
+                "NO SIGNAL",
 
             "error":
                 "Not enough candle data."
@@ -645,13 +656,15 @@ def market():
         }), 400
 
 
-    # ========================================================
-    # PRICE DATA
-    # ========================================================
+    # =====================================================
+    # CLOSE PRICES
+    # =====================================================
 
     closes = [
 
-        float(candle["close"])
+        float(
+            candle["close"]
+        )
 
         for candle in candles
 
@@ -670,9 +683,9 @@ def market():
     )
 
 
-    # ========================================================
+    # =====================================================
     # INDICATORS
-    # ========================================================
+    # =====================================================
 
     ema50 = calculate_ema(
         closes,
@@ -691,7 +704,8 @@ def market():
 
             "market_open": True,
 
-            "signal": "NO SIGNAL",
+            "signal":
+                "NO SIGNAL",
 
             "error":
                 "Not enough data for indicators."
@@ -699,9 +713,9 @@ def market():
         }), 400
 
 
-    # ========================================================
+    # =====================================================
     # CANDLE
-    # ========================================================
+    # =====================================================
 
     if price > open_price:
 
@@ -716,9 +730,9 @@ def market():
         candle = "DOJI"
 
 
-    # ========================================================
+    # =====================================================
     # TREND
-    # ========================================================
+    # =====================================================
 
     if price > ema50:
 
@@ -733,15 +747,16 @@ def market():
         trend = "AT EMA"
 
 
-    # ========================================================
-    # RULE SCORE
-    # ========================================================
+    # =====================================================
+    # SIGNAL SCORE
+    # =====================================================
 
     call_score = 0
+
     put_score = 0
 
 
-    # EMA
+    # EMA rule
 
     if price > ema50:
 
@@ -752,7 +767,7 @@ def market():
         put_score += 1
 
 
-    # RSI
+    # RSI rule
 
     if rsi14 > 50:
 
@@ -763,7 +778,7 @@ def market():
         put_score += 1
 
 
-    # Candle
+    # Candle rule
 
     if candle == "BULLISH":
 
@@ -774,9 +789,9 @@ def market():
         put_score += 1
 
 
-    # ========================================================
-    # SIGNAL
-    # ========================================================
+    # =====================================================
+    # FINAL SIGNAL
+    # =====================================================
 
     if call_score == 3:
 
@@ -803,27 +818,38 @@ def market():
     )
 
 
-    # ========================================================
+    # =====================================================
     # RESPONSE
-    # ========================================================
+    # =====================================================
 
     return jsonify({
 
-        "market_open": True,
+        "market_open":
+            True,
 
-        "symbol": symbol,
+        "symbol":
+            symbol,
 
         "timeframe":
             f"{minutes} Minute",
 
         "price":
-            round(price, 5),
+            round(
+                price,
+                5
+            ),
 
         "ema50":
-            round(ema50, 5),
+            round(
+                ema50,
+                5
+            ),
 
         "rsi14":
-            round(rsi14, 2),
+            round(
+                rsi14,
+                2
+            ),
 
         "candle":
             candle,
@@ -840,19 +866,17 @@ def market():
     })
 
 
-# ============================================================
-# START SERVER
-# ============================================================
+# =========================================================
+# START FLASK
+# =========================================================
 
 if __name__ == "__main__":
 
     port = int(
-
         os.getenv(
             "PORT",
             "5000"
         )
-
     )
 
     app.run(
