@@ -50,10 +50,6 @@ border-radius: 20px;
 
 text-align: center;
 
-box-shadow:
-0 10px 35px
-rgba(0,0,0,.45);
-
 }
 
 h1 {
@@ -220,22 +216,26 @@ line-height: 1.5;
 </h1>
 
 <div class="subtitle">
-EMA + RSI + Candle Analysis
+Real Market • EMA + RSI + Candle
 </div>
 
 
 <select id="pair">
 
-<option>
-EUR/USD
+{% for pair in pairs %}
+
+<option value="{{ pair }}">
+{{ pair }}
 </option>
+
+{% endfor %}
 
 </select>
 
 
 <select id="timeframe">
 
-<option>
+<option value="1min">
 1 Minute
 </option>
 
@@ -260,7 +260,7 @@ WAITING...
 </div>
 
 <div id="details">
-Press Generate Signal
+Select a pair and generate signal
 </div>
 
 
@@ -354,7 +354,7 @@ RULE SCORE
 
 <div class="status">
 
-🟢 Live Market Data Connected
+🟢 Real Market Data Connected
 
 </div>
 
@@ -362,7 +362,7 @@ RULE SCORE
 <div class="warning">
 
 Indicator-based analysis only.
-The score is not a probability of winning.
+Rule score is not a probability of winning.
 No guaranteed results.
 
 </div>
@@ -374,22 +374,38 @@ No guaranteed results.
 
 async function generateSignal() {
 
+const pair =
+document.getElementById(
+"pair"
+).value;
+
 const signal =
-document.getElementById("signal");
+document.getElementById(
+"signal"
+);
 
 const details =
-document.getElementById("details");
+document.getElementById(
+"details"
+);
+
 
 signal.innerText =
 "⏳ ANALYZING...";
 
 details.innerText =
-"Fetching live candles...";
+"Fetching " +
+pair +
+" market data...";
+
 
 try {
 
 const response =
-await fetch("/api/market");
+await fetch(
+"/api/market?symbol=" +
+encodeURIComponent(pair)
+);
 
 const data =
 await response.json();
@@ -408,44 +424,56 @@ return;
 }
 
 
-document.getElementById("price")
-.innerText =
+document.getElementById(
+"price"
+).innerText =
 data.price;
 
 
-document.getElementById("ema")
-.innerText =
+document.getElementById(
+"ema"
+).innerText =
 data.ema50;
 
 
-document.getElementById("rsi")
-.innerText =
+document.getElementById(
+"rsi"
+).innerText =
 data.rsi14;
 
 
-document.getElementById("candle")
-.innerText =
+document.getElementById(
+"candle"
+).innerText =
 data.candle;
 
 
-document.getElementById("trend")
-.innerText =
+document.getElementById(
+"trend"
+).innerText =
 data.ema_trend;
 
 
-document.getElementById("confidence")
-.innerText =
+document.getElementById(
+"confidence"
+).innerText =
 data.confidence + "%";
 
 
-if (data.signal === "CALL / UP") {
+if (
+data.signal ===
+"CALL / UP"
+) {
 
 signal.innerText =
 "⬆️ CALL / UP";
 
 }
 
-else if (data.signal === "PUT / DOWN") {
+else if (
+data.signal ===
+"PUT / DOWN"
+) {
 
 signal.innerText =
 "⬇️ PUT / DOWN";
