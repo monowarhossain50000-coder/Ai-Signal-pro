@@ -3,196 +3,210 @@
 
 <head>
 
-    <meta charset="UTF-8">
+<meta charset="UTF-8">
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
 
-    <title>AI Signal Pro</title>
+<title>AI Signal Pro</title>
 
-    <style>
+<style>
 
-        * {
-            box-sizing: border-box;
-        }
+* {
+box-sizing: border-box;
+}
 
-        body {
+body {
 
-            margin: 0;
+margin: 0;
 
-            min-height: 100vh;
+min-height: 100vh;
 
-            font-family: Arial, sans-serif;
+font-family: Arial, sans-serif;
 
-            background: #07111f;
+background: #07111f;
 
-            color: white;
+color: white;
 
-            display: flex;
+display: flex;
 
-            justify-content: center;
+justify-content: center;
 
-            align-items: center;
-        }
+align-items: center;
 
-        .container {
+}
 
-            width: 92%;
+.container {
 
-            max-width: 430px;
+width: 92%;
 
-            background: #0d1b2a;
+max-width: 430px;
 
-            padding: 25px;
+background: #0d1b2a;
 
-            border-radius: 20px;
+padding: 25px;
 
-            text-align: center;
+border-radius: 20px;
 
-            box-shadow:
-                0 10px 35px
-                rgba(0,0,0,.45);
-        }
+text-align: center;
 
-        h1 {
+box-shadow:
+0 10px 35px
+rgba(0,0,0,.45);
 
-            margin: 0;
+}
 
-            font-size: 30px;
-        }
+h1 {
 
-        .subtitle {
+margin: 0;
 
-            color: #9fb3c8;
+font-size: 29px;
 
-            margin: 8px 0 25px;
-        }
+}
 
-        select {
+.subtitle {
 
-            width: 100%;
+color: #9fb3c8;
 
-            padding: 14px;
+margin: 8px 0 22px;
 
-            margin: 7px 0;
+}
 
-            border: none;
+select {
 
-            border-radius: 10px;
+width: 100%;
 
-            background: #16283b;
+padding: 14px;
 
-            color: white;
+margin: 7px 0;
 
-            font-size: 16px;
-        }
+border: none;
 
-        button {
+border-radius: 10px;
 
-            width: 100%;
+background: #16283b;
 
-            margin-top: 18px;
+color: white;
 
-            padding: 15px;
+font-size: 16px;
 
-            border: none;
+}
 
-            border-radius: 10px;
+button {
 
-            background: #16a085;
+width: 100%;
 
-            color: white;
+margin-top: 18px;
 
-            font-size: 17px;
+padding: 15px;
 
-            font-weight: bold;
-        }
+border: none;
 
-        .signal-box {
+border-radius: 10px;
 
-            margin-top: 25px;
+background: #16a085;
 
-            padding: 22px;
+color: white;
 
-            border-radius: 15px;
+font-size: 17px;
 
-            background: #13263a;
-        }
+font-weight: bold;
 
-        #signal {
+}
 
-            font-size: 28px;
+.signal-box {
 
-            font-weight: bold;
+margin-top: 22px;
 
-            margin: 12px 0;
-        }
+padding: 20px;
 
-        #details {
+border-radius: 15px;
 
-            color: #9fb3c8;
+background: #13263a;
 
-            line-height: 1.8;
-        }
+}
 
-        .indicator {
+#signal {
 
-            margin-top: 15px;
+font-size: 28px;
 
-            display: grid;
+font-weight: bold;
 
-            grid-template-columns:
-                1fr 1fr;
+margin: 12px 0;
 
-            gap: 10px;
-        }
+}
 
-        .box {
+#details {
 
-            background: #16283b;
+color: #9fb3c8;
 
-            padding: 12px;
+line-height: 1.8;
 
-            border-radius: 10px;
-        }
+}
 
-        .box span {
+.grid {
 
-            display: block;
+display: grid;
 
-            color: #8fa5ba;
+grid-template-columns: 1fr 1fr;
 
-            font-size: 12px;
+gap: 10px;
 
-            margin-bottom: 5px;
-        }
+margin-top: 15px;
 
-        .box strong {
+}
 
-            font-size: 18px;
-        }
+.box {
 
-        .status {
+background: #16283b;
 
-            margin-top: 18px;
+padding: 12px;
 
-            color: #72e6a8;
+border-radius: 10px;
 
-            font-size: 13px;
-        }
+}
 
-        .warning {
+.box span {
 
-            margin-top: 18px;
+display: block;
 
-            color: #8295a8;
+font-size: 12px;
 
-            font-size: 11px;
+color: #8fa5ba;
 
-            line-height: 1.5;
-        }
+margin-bottom: 5px;
 
-    </style>
+}
+
+.box strong {
+
+font-size: 17px;
+
+}
+
+.status {
+
+margin-top: 18px;
+
+color: #72e6a8;
+
+font-size: 13px;
+
+}
+
+.warning {
+
+margin-top: 15px;
+
+font-size: 11px;
+
+color: #8295a8;
+
+line-height: 1.5;
+
+}
+
+</style>
 
 </head>
 
@@ -201,141 +215,157 @@
 
 <div class="container">
 
-    <h1>
-        🤖 AI SIGNAL PRO
-    </h1>
+<h1>
+🤖 AI SIGNAL PRO
+</h1>
 
-    <div class="subtitle">
-        EMA 50 + RSI 14 Analysis
-    </div>
-
-
-    <select id="pair">
-
-        <option value="EUR/USD">
-            EUR/USD
-        </option>
-
-        <option value="GBP/USD">
-            GBP/USD
-        </option>
-
-        <option value="USD/JPY">
-            USD/JPY
-        </option>
-
-    </select>
+<div class="subtitle">
+EMA + RSI + Candle Analysis
+</div>
 
 
-    <select id="timeframe">
+<select id="pair">
 
-        <option value="1min">
-            1 Minute
-        </option>
+<option>
+EUR/USD
+</option>
 
-    </select>
-
-
-    <button onclick="generateSignal()">
-
-        ⚡ GENERATE SIGNAL
-
-    </button>
+</select>
 
 
-    <div class="signal-box">
+<select id="timeframe">
 
-        <div>
-            CURRENT SIGNAL
-        </div>
+<option>
+1 Minute
+</option>
 
-
-        <div id="signal">
-
-            WAITING...
-
-        </div>
+</select>
 
 
-        <div id="details">
+<button onclick="generateSignal()">
 
-            Press Generate Signal
+⚡ GENERATE SIGNAL
 
-        </div>
-
-
-        <div class="indicator">
-
-            <div class="box">
-
-                <span>
-                    PRICE
-                </span>
-
-                <strong id="price">
-                    —
-                </strong>
-
-            </div>
+</button>
 
 
-            <div class="box">
+<div class="signal-box">
 
-                <span>
-                    EMA 50
-                </span>
+<div>
+CURRENT SIGNAL
+</div>
 
-                <strong id="ema">
-                    —
-                </strong>
+<div id="signal">
+WAITING...
+</div>
 
-            </div>
-
-
-            <div class="box">
-
-                <span>
-                    RSI 14
-                </span>
-
-                <strong id="rsi">
-                    —
-                </strong>
-
-            </div>
+<div id="details">
+Press Generate Signal
+</div>
 
 
-            <div class="box">
+<div class="grid">
 
-                <span>
-                    TIMEFRAME
-                </span>
+<div class="box">
 
-                <strong>
-                    1M
-                </strong>
+<span>
+PRICE
+</span>
 
-            </div>
+<strong id="price">
+—
+</strong>
 
-        </div>
-
-    </div>
+</div>
 
 
-    <div class="status">
+<div class="box">
 
-        🟢 Live Market Data Connected
+<span>
+EMA 50
+</span>
 
-    </div>
+<strong id="ema">
+—
+</strong>
+
+</div>
 
 
-    <div class="warning">
+<div class="box">
 
-        Indicator-based analysis only.
-        No guaranteed results.
-        Demo/paper testing recommended.
+<span>
+RSI 14
+</span>
 
-    </div>
+<strong id="rsi">
+—
+</strong>
+
+</div>
+
+
+<div class="box">
+
+<span>
+CANDLE
+</span>
+
+<strong id="candle">
+—
+</strong>
+
+</div>
+
+</div>
+
+
+<div class="grid">
+
+<div class="box">
+
+<span>
+TREND
+</span>
+
+<strong id="trend">
+—
+</strong>
+
+</div>
+
+
+<div class="box">
+
+<span>
+RULE SCORE
+</span>
+
+<strong id="confidence">
+—
+</strong>
+
+</div>
+
+</div>
+
+</div>
+
+
+<div class="status">
+
+🟢 Live Market Data Connected
+
+</div>
+
+
+<div class="warning">
+
+Indicator-based analysis only.
+The score is not a probability of winning.
+No guaranteed results.
+
+</div>
 
 </div>
 
@@ -344,102 +374,109 @@
 
 async function generateSignal() {
 
-    const signal =
-        document.getElementById("signal");
+const signal =
+document.getElementById("signal");
 
-    const details =
-        document.getElementById("details");
+const details =
+document.getElementById("details");
 
-    const price =
-        document.getElementById("price");
+signal.innerText =
+"⏳ ANALYZING...";
 
-    const ema =
-        document.getElementById("ema");
+details.innerText =
+"Fetching live candles...";
 
-    const rsi =
-        document.getElementById("rsi");
+try {
 
+const response =
+await fetch("/api/market");
 
-    signal.innerText =
-        "⏳ ANALYZING...";
-
-    details.innerText =
-        "Fetching live market data...";
+const data =
+await response.json();
 
 
-    try {
+if (data.error) {
 
-        const response =
-            await fetch("/api/market");
+signal.innerText =
+"⚠️ ERROR";
 
+details.innerText =
+data.error;
 
-        const data =
-            await response.json();
+return;
 
-
-        if (data.error) {
-
-            signal.innerText =
-                "⚠️ ERROR";
-
-            details.innerText =
-                data.error;
-
-            return;
-        }
+}
 
 
-        price.innerText =
-            data.price;
+document.getElementById("price")
+.innerText =
+data.price;
 
 
-        ema.innerText =
-            data.ema50;
+document.getElementById("ema")
+.innerText =
+data.ema50;
 
 
-        rsi.innerText =
-            data.rsi14;
+document.getElementById("rsi")
+.innerText =
+data.rsi14;
 
 
-        if (data.signal === "CALL / UP") {
-
-            signal.innerText =
-                "⬆️ CALL / UP";
-
-        }
-
-        else if (data.signal === "PUT / DOWN") {
-
-            signal.innerText =
-                "⬇️ PUT / DOWN";
-
-        }
-
-        else {
-
-            signal.innerText =
-                "⏸️ WAIT";
-
-        }
+document.getElementById("candle")
+.innerText =
+data.candle;
 
 
-        details.innerText =
-            data.symbol +
-            " • " +
-            data.interval;
+document.getElementById("trend")
+.innerText =
+data.ema_trend;
 
 
-    }
+document.getElementById("confidence")
+.innerText =
+data.confidence + "%";
 
-    catch (error) {
 
-        signal.innerText =
-            "⚠️ ERROR";
+if (data.signal === "CALL / UP") {
 
-        details.innerText =
-            "Could not connect to server.";
+signal.innerText =
+"⬆️ CALL / UP";
 
-    }
+}
+
+else if (data.signal === "PUT / DOWN") {
+
+signal.innerText =
+"⬇️ PUT / DOWN";
+
+}
+
+else {
+
+signal.innerText =
+"⏸️ WAIT";
+
+}
+
+
+details.innerText =
+data.symbol +
+" • " +
+data.interval;
+
+
+}
+
+catch (error) {
+
+signal.innerText =
+"⚠️ ERROR";
+
+details.innerText =
+"Server connection failed.";
+
+}
 
 }
 
