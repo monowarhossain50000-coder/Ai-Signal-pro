@@ -1,1 +1,149 @@
-html, head, title AI Signal Pro, head বন্ধ, body, h1 AI Signal Pro h1, h2 ডাবল কার্লি ব্রেস signal ডাবল ব্রেস, body বন্ধ, html বন্ধ
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Signal Pro</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            background: #07111f;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            width: 92%;
+            max-width: 430px;
+            background: #0d1b2a;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 35px rgba(0,0,0,.45);
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 5px;
+            font-size: 30px;
+        }
+
+        .subtitle {
+            color: #9fb3c8;
+            margin-bottom: 25px;
+        }
+
+        select {
+            width: 100%;
+            padding: 14px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 10px;
+            background: #16283b;
+            color: white;
+            font-size: 16px;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 18px;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            background: #16a085;
+            color: white;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:active {
+            transform: scale(.98);
+        }
+
+        .signal-box {
+            margin-top: 25px;
+            padding: 22px;
+            border-radius: 15px;
+            background: #13263a;
+        }
+
+        #signal {
+            font-size: 28px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .note {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #8295a8;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>🤖 AI SIGNAL PRO</h1>
+    <div class="subtitle">Smart Trading Signal</div>
+
+    <select id="pair">
+        <option>EUR/USD</option>
+        <option>GBP/USD</option>
+        <option>USD/JPY</option>
+        <option>EUR/JPY</option>
+        <option>GBP/JPY</option>
+    </select>
+
+    <select id="timeframe">
+        <option>1 Minute</option>
+        <option>5 Minutes</option>
+        <option>15 Minutes</option>
+    </select>
+
+    <button onclick="generateSignal()">
+        ⚡ GENERATE SIGNAL
+    </button>
+
+    <div class="signal-box">
+        <div>Current Signal</div>
+        <div id="signal">WAITING...</div>
+        <div id="details">Select pair and generate signal</div>
+    </div>
+
+    <div class="note">
+        Demo signal only. Not financial advice.
+    </div>
+
+</div>
+
+<script>
+function generateSignal() {
+
+    const signals = ["⬆️ CALL / UP", "⬇️ PUT / DOWN"];
+
+    const randomSignal =
+        signals[Math.floor(Math.random() * signals.length)];
+
+    document.getElementById("signal").innerText = randomSignal;
+
+    const pair = document.getElementById("pair").value;
+    const timeframe = document.getElementById("timeframe").value;
+
+    document.getElementById("details").innerText =
+        pair + " • " + timeframe;
+}
+</script>
+
+</body>
+</html>
