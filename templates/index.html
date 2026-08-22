@@ -1,193 +1,450 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
     <title>AI Signal Pro</title>
 
     <style>
+
         * {
             box-sizing: border-box;
         }
 
         body {
+
             margin: 0;
+
             min-height: 100vh;
+
             font-family: Arial, sans-serif;
+
             background: #07111f;
+
             color: white;
+
             display: flex;
+
             justify-content: center;
+
             align-items: center;
         }
 
         .container {
+
             width: 92%;
+
             max-width: 430px;
+
             background: #0d1b2a;
+
             padding: 25px;
+
             border-radius: 20px;
+
             text-align: center;
+
+            box-shadow:
+                0 10px 35px
+                rgba(0,0,0,.45);
         }
 
         h1 {
+
             margin: 0;
+
             font-size: 30px;
         }
 
         .subtitle {
+
             color: #9fb3c8;
+
             margin: 8px 0 25px;
         }
 
         select {
+
             width: 100%;
+
             padding: 14px;
+
             margin: 7px 0;
-            border: 0;
+
+            border: none;
+
             border-radius: 10px;
+
             background: #16283b;
+
             color: white;
+
             font-size: 16px;
         }
 
         button {
+
             width: 100%;
+
             margin-top: 18px;
+
             padding: 15px;
-            border: 0;
+
+            border: none;
+
             border-radius: 10px;
+
             background: #16a085;
+
             color: white;
+
             font-size: 17px;
+
             font-weight: bold;
         }
 
         .signal-box {
+
             margin-top: 25px;
+
             padding: 22px;
+
             border-radius: 15px;
+
             background: #13263a;
         }
 
         #signal {
+
             font-size: 28px;
+
             font-weight: bold;
+
             margin: 12px 0;
         }
 
         #details {
+
             color: #9fb3c8;
+
+            line-height: 1.8;
+        }
+
+        .indicator {
+
+            margin-top: 15px;
+
+            display: grid;
+
+            grid-template-columns:
+                1fr 1fr;
+
+            gap: 10px;
+        }
+
+        .box {
+
+            background: #16283b;
+
+            padding: 12px;
+
+            border-radius: 10px;
+        }
+
+        .box span {
+
+            display: block;
+
+            color: #8fa5ba;
+
+            font-size: 12px;
+
+            margin-bottom: 5px;
+        }
+
+        .box strong {
+
+            font-size: 18px;
         }
 
         .status {
+
             margin-top: 18px;
+
             color: #72e6a8;
+
             font-size: 13px;
         }
 
         .warning {
+
             margin-top: 18px;
+
             color: #8295a8;
+
             font-size: 11px;
+
+            line-height: 1.5;
         }
+
     </style>
+
 </head>
+
 
 <body>
 
 <div class="container">
 
-    <h1>🤖 AI SIGNAL PRO</h1>
+    <h1>
+        🤖 AI SIGNAL PRO
+    </h1>
 
     <div class="subtitle">
-        Live Market Analysis
+        EMA 50 + RSI 14 Analysis
     </div>
 
+
     <select id="pair">
-        <option value="EUR/USD">EUR/USD</option>
-        <option value="GBP/USD">GBP/USD</option>
-        <option value="USD/JPY">USD/JPY</option>
-        <option value="EUR/JPY">EUR/JPY</option>
-        <option value="GBP/JPY">GBP/JPY</option>
+
+        <option value="EUR/USD">
+            EUR/USD
+        </option>
+
+        <option value="GBP/USD">
+            GBP/USD
+        </option>
+
+        <option value="USD/JPY">
+            USD/JPY
+        </option>
+
     </select>
+
 
     <select id="timeframe">
-        <option value="1min">1 Minute</option>
+
+        <option value="1min">
+            1 Minute
+        </option>
+
     </select>
 
+
     <button onclick="generateSignal()">
+
         ⚡ GENERATE SIGNAL
+
     </button>
+
 
     <div class="signal-box">
 
-        <div>LIVE SIGNAL</div>
+        <div>
+            CURRENT SIGNAL
+        </div>
+
 
         <div id="signal">
+
             WAITING...
+
         </div>
+
 
         <div id="details">
+
             Press Generate Signal
+
+        </div>
+
+
+        <div class="indicator">
+
+            <div class="box">
+
+                <span>
+                    PRICE
+                </span>
+
+                <strong id="price">
+                    —
+                </strong>
+
+            </div>
+
+
+            <div class="box">
+
+                <span>
+                    EMA 50
+                </span>
+
+                <strong id="ema">
+                    —
+                </strong>
+
+            </div>
+
+
+            <div class="box">
+
+                <span>
+                    RSI 14
+                </span>
+
+                <strong id="rsi">
+                    —
+                </strong>
+
+            </div>
+
+
+            <div class="box">
+
+                <span>
+                    TIMEFRAME
+                </span>
+
+                <strong>
+                    1M
+                </strong>
+
+            </div>
+
         </div>
 
     </div>
 
+
     <div class="status">
-        🟢 System Online
+
+        🟢 Live Market Data Connected
+
     </div>
 
+
     <div class="warning">
-        Market analysis is informational only. No guaranteed results.
+
+        Indicator-based analysis only.
+        No guaranteed results.
+        Demo/paper testing recommended.
+
     </div>
 
 </div>
+
 
 <script>
 
 async function generateSignal() {
 
-    const signal = document.getElementById("signal");
-    const details = document.getElementById("details");
+    const signal =
+        document.getElementById("signal");
 
-    signal.innerText = "⏳ ANALYZING...";
-    details.innerText = "Fetching market data...";
+    const details =
+        document.getElementById("details");
+
+    const price =
+        document.getElementById("price");
+
+    const ema =
+        document.getElementById("ema");
+
+    const rsi =
+        document.getElementById("rsi");
+
+
+    signal.innerText =
+        "⏳ ANALYZING...";
+
+    details.innerText =
+        "Fetching live market data...";
+
 
     try {
 
-        const response = await fetch("/api/market");
-        const data = await response.json();
+        const response =
+            await fetch("/api/market");
+
+
+        const data =
+            await response.json();
+
 
         if (data.error) {
-            signal.innerText = "⚠️ ERROR";
-            details.innerText = data.error;
+
+            signal.innerText =
+                "⚠️ ERROR";
+
+            details.innerText =
+                data.error;
+
             return;
         }
 
-        if (!data.values || data.values.length === 0) {
-            signal.innerText = "⚠️ NO DATA";
-            details.innerText = "Market data unavailable";
-            return;
+
+        price.innerText =
+            data.price;
+
+
+        ema.innerText =
+            data.ema50;
+
+
+        rsi.innerText =
+            data.rsi14;
+
+
+        if (data.signal === "CALL / UP") {
+
+            signal.innerText =
+                "⬆️ CALL / UP";
+
         }
 
-        const latest = data.values[0];
+        else if (data.signal === "PUT / DOWN") {
 
-        signal.innerText = "📊 DATA RECEIVED";
+            signal.innerText =
+                "⬇️ PUT / DOWN";
+
+        }
+
+        else {
+
+            signal.innerText =
+                "⏸️ WAIT";
+
+        }
+
 
         details.innerText =
-            "EUR/USD • 1 Minute • Price: " + latest.close;
+            data.symbol +
+            " • " +
+            data.interval;
 
-    } catch (error) {
-
-        signal.innerText = "⚠️ ERROR";
-        details.innerText =
-            "Could not connect to market data";
 
     }
+
+    catch (error) {
+
+        signal.innerText =
+            "⚠️ ERROR";
+
+        details.innerText =
+            "Could not connect to server.";
+
+    }
+
 }
 
 </script>
 
 </body>
+
 </html>
