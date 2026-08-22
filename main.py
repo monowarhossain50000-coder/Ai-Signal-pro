@@ -1,5 +1,7 @@
 import os
 import requests
+from datetime import datetime, timezone
+
 from flask import Flask, render_template, jsonify, request
 
 app = Flask(__name__)
@@ -9,13 +11,18 @@ API_KEY = os.getenv("TWELVEDATA_API_KEY")
 REAL_PAIRS = [
     "EUR/USD", "GBP/USD", "USD/JPY", "USD/CHF",
     "AUD/USD", "USD/CAD", "NZD/USD",
+
     "EUR/GBP", "EUR/JPY", "EUR/CHF", "EUR/AUD",
     "EUR/CAD", "EUR/NZD",
+
     "GBP/JPY", "GBP/CHF", "GBP/AUD",
     "GBP/CAD", "GBP/NZD",
+
     "AUD/JPY", "CAD/JPY", "CHF/JPY", "NZD/JPY",
+
     "AUD/CAD", "AUD/CHF", "AUD/NZD",
     "CAD/CHF", "NZD/CAD", "NZD/CHF",
+
     "USD/SGD", "USD/HKD", "USD/SEK",
     "USD/NOK", "USD/DKK", "USD/ZAR", "USD/TRY"
 ]
@@ -33,15 +40,41 @@ TIMEFRAMES = {
 }
 
 
-def ema(prices, period=50):
+def forex_weekend_closed():
+    """
+    Forex is normally closed from Friday evening
+    until Sunday evening, depending on the provider's
+    timezone/session.
+    """
+
+    now = datetime.now(timezone.utc)
+
+    # Saturday
+    if now.weekday() == 5:
+        return True
+
+    # Sunday before 21:00 UTC
+    if now.weekday() == 6 and now.hour < 21:
+        return True
+
+    # Friday after 21:00 UTC
+    if now.weekday() == 4 and now.hour >= 21:
+        return True
+
+    return False
+
+
+def calculate_ema(prices, period=50):
 
     if len(prices) < period:
         return None
 
     value = sum(prices[:period]) / period
+
     multiplier = 2 / (period + 1)
 
     for price in prices[period:]:
+
         value = (
             (price - value)
             * multiplier
@@ -51,7 +84,7 @@ def ema(prices, period=50):
     return value
 
 
-def rsi(prices, period=14):
+def calculate_rsi(prices, period=14):
 
     if len(prices) <= period:
         return None
@@ -66,8 +99,13 @@ def rsi(prices, period=14):
         gains.append(max(change, 0))
         losses.append(max(-change, 0))
 
-    avg_gain = sum(gains[:period]) / period
-    avg_loss = sum(losses[:period]) / period
+    avg_gain = sum(
+        gains[:period]
+    ) / period
+
+    avg_loss = sum(
+        losses[:period]
+    ) / period
 
     for i in range(period, len(gains)):
 
@@ -86,7 +124,9 @@ def rsi(prices, period=14):
 
     rs = avg_gain / avg_loss
 
-    return 100 - (100 / (1 + rs))
+    return 100 - (
+        100 / (1 + rs)
+    )
 
 
 @app.route("/")
@@ -104,6 +144,8 @@ def market():
     if not API_KEY:
 
         return jsonify({
+            "market_open": False,
+            "signal": "NO SIGNAL",
             "error": "API key is missing"
         }), 500
 
@@ -120,18 +162,51 @@ def market():
     if symbol not in REAL_PAIRS:
 
         return jsonify({
+            "market_open": False,
+            "signal": "NO SIGNAL",
             "error": "Invalid pair"
         }), 400
 
     if timeframe not in TIMEFRAMES:
 
         return jsonify({
+            "market_open": False,
+            "signal": "NO SIGNAL",
             "error": "Invalid timeframe"
         }), 400
 
+    # ------------------------------------------------
+    # IMPORTANT:
+    # Do not generate a Real Market signal on weekends.
+    # ------------------------------------------------
+
+    if forex_weekend_closed():
+
+        return jsonify({
+
+            "market_open": False,
+
+            "symbol": symbol,
+
+            "timeframe": f"{TIMEFRAMES[timeframe]} Minute",
+
+            "signal": "MARKET CLOSED",
+
+            "message": (
+                "Real Forex market is currently closed. "
+                "No signal generated."
+            )
+
+        })
+
+
     minutes = TIMEFRAMES[timeframe]
 
-    # Twelve Data native intervals
+
+    # ------------------------------------------------
+    # Native Twelve Data intervals
+    # ------------------------------------------------
+
     if minutes in [1, 5, 15, 30, 60, 240]:
 
         if minutes == 60:
@@ -144,17 +219,24 @@ def market():
             interval = f"{minutes}min"
 
         params = {
+
             "symbol": symbol,
+
             "interval": interval,
+
             "outputsize": 100,
+
             "apikey": API_KEY
         }
 
         try:
 
             response = requests.get(
+
                 "https://api.twelvedata.com/time_series",
+
                 params=params,
+
                 timeout=15
             )
 
@@ -163,38 +245,65 @@ def market():
             if "values" not in data:
 
                 return jsonify({
+
+                    "market_open": True,
+
+                    "signal": "NO SIGNAL",
+
                     "error": data.get(
+
                         "message",
+
                         "Market data unavailable"
                     )
+
                 }), 400
 
             candles = list(
-                reversed(data["values"])
+
+                reversed(
+                    data["values"]
+                )
             )
 
         except Exception as e:
 
             return jsonify({
+
+                "market_open": True,
+
+                "signal": "NO SIGNAL",
+
                 "error": str(e)
+
             }), 500
+
+
+    # ------------------------------------------------
+    # Build 2-minute / 3-minute candles from 1-minute
+    # ------------------------------------------------
 
     else:
 
-        # 2M and 3M are built from 1M candles
-
         params = {
+
             "symbol": symbol,
+
             "interval": "1min",
+
             "outputsize": 300,
+
             "apikey": API_KEY
         }
 
         try:
 
             response = requests.get(
+
                 "https://api.twelvedata.com/time_series",
+
                 params=params,
+
                 timeout=15
             )
 
@@ -203,14 +312,25 @@ def market():
             if "values" not in data:
 
                 return jsonify({
+
+                    "market_open": True,
+
+                    "signal": "NO SIGNAL",
+
                     "error": data.get(
+
                         "message",
+
                         "Market data unavailable"
                     )
+
                 }), 400
 
             raw = list(
-                reversed(data["values"])
+
+                reversed(
+                    data["values"]
+                )
             )
 
             candles = []
@@ -218,46 +338,76 @@ def market():
             step = minutes
 
             for i in range(
+
                 0,
+
                 len(raw) - step + 1,
+
                 step
+
             ):
 
-                group = raw[i:i + step]
+                group = raw[
+                    i:i + step
+                ]
 
                 candles.append({
 
-                    "open": group[0]["open"],
+                    "open":
+                        group[0]["open"],
 
-                    "high": max(
-                        float(x["high"])
-                        for x in group
-                    ),
+                    "high":
+                        max(
+                            float(x["high"])
+                            for x in group
+                        ),
 
-                    "low": min(
-                        float(x["low"])
-                        for x in group
-                    ),
+                    "low":
+                        min(
+                            float(x["low"])
+                            for x in group
+                        ),
 
-                    "close": group[-1]["close"]
+                    "close":
+                        group[-1]["close"]
+
                 })
 
         except Exception as e:
 
             return jsonify({
+
+                "market_open": True,
+
+                "signal": "NO SIGNAL",
+
                 "error": str(e)
+
             }), 500
+
 
     if len(candles) < 60:
 
         return jsonify({
-            "error": "Not enough candle data"
+
+            "market_open": True,
+
+            "signal": "NO SIGNAL",
+
+            "error":
+                "Not enough candle data"
+
         }), 400
 
+
     closes = [
+
         float(x["close"])
+
         for x in candles
+
     ]
+
 
     current = candles[-1]
 
@@ -269,60 +419,102 @@ def market():
         current["open"]
     )
 
-    ema50 = ema(
+
+    ema50 = calculate_ema(
         closes,
         50
     )
 
-    rsi14 = rsi(
+    rsi14 = calculate_rsi(
         closes,
         14
     )
 
+
+    if ema50 is None or rsi14 is None:
+
+        return jsonify({
+
+            "market_open": True,
+
+            "signal": "NO SIGNAL",
+
+            "error":
+                "Not enough data for indicators"
+
+        }), 400
+
+
     if price > open_price:
+
         candle = "BULLISH"
 
     elif price < open_price:
+
         candle = "BEARISH"
 
     else:
+
         candle = "DOJI"
 
+
     if price > ema50:
+
         trend = "ABOVE EMA"
 
     elif price < ema50:
+
         trend = "BELOW EMA"
 
     else:
+
         trend = "AT EMA"
 
+
     call_score = 0
+
     put_score = 0
 
+
     if price > ema50:
+
         call_score += 1
+
     elif price < ema50:
+
         put_score += 1
+
 
     if rsi14 > 50:
+
         call_score += 1
+
     elif rsi14 < 50:
+
         put_score += 1
+
 
     if candle == "BULLISH":
+
         call_score += 1
+
     elif candle == "BEARISH":
+
         put_score += 1
 
+
     if call_score == 3:
+
         signal = "CALL / UP"
 
     elif put_score == 3:
+
         signal = "PUT / DOWN"
 
     else:
+
         signal = "WAIT"
+
 
     score = max(
         call_score,
@@ -333,41 +525,50 @@ def market():
         (score / 3) * 100
     )
 
+
     return jsonify({
+
+        "market_open": True,
 
         "symbol": symbol,
 
-        "timeframe": f"{minutes} Minute",
+        "timeframe":
+            f"{minutes} Minute",
 
-        "price": round(
-            price,
-            5
-        ),
+        "price":
+            round(price, 5),
 
-        "ema50": round(
-            ema50,
-            5
-        ),
+        "ema50":
+            round(ema50, 5),
 
-        "rsi14": round(
-            rsi14,
-            2
-        ),
+        "rsi14":
+            round(rsi14, 2),
 
-        "candle": candle,
+        "candle":
+            candle,
 
-        "trend": trend,
+        "trend":
+            trend,
 
-        "signal": signal,
+        "signal":
+            signal,
 
-        "confidence": confidence
+        "confidence":
+            confidence
 
     })
 
 
 if __name__ == "__main__":
 
+    port = int(
+        os.getenv(
+            "PORT",
+            "5000"
+        )
+    )
+
     app.run(
         host="0.0.0.0",
-        port=5000
+        port=port
     )
