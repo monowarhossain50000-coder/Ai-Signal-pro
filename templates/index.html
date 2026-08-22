@@ -13,378 +13,543 @@ content="width=device-width, initial-scale=1.0">
 <style>
 
 * {
-box-sizing: border-box;
+    box-sizing: border-box;
 }
 
 body {
-margin: 0;
-min-height: 100vh;
-font-family: Arial, sans-serif;
-background: #07111f;
-color: white;
-display: flex;
-justify-content: center;
-align-items: center;
+    margin: 0;
+    min-height: 100vh;
+    font-family: Arial, sans-serif;
+    background: #07111f;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .container {
-width: 92%;
-max-width: 430px;
-background: #0d1b2a;
-padding: 25px;
-border-radius: 20px;
-text-align: center;
+    width: 92%;
+    max-width: 430px;
+    background: #0d1b2a;
+    padding: 25px;
+    border-radius: 20px;
+    text-align: center;
 }
 
 h1 {
-margin: 0;
-font-size: 29px;
+    margin: 0;
+    font-size: 29px;
 }
 
 .subtitle {
-color: #9fb3c8;
-margin: 8px 0 22px;
+    color: #9fb3c8;
+    margin: 8px 0 22px;
 }
 
 select {
-width: 100%;
-padding: 14px;
-margin: 7px 0;
-border: none;
-border-radius: 10px;
-background: #16283b;
-color: white;
-font-size: 16px;
+    width: 100%;
+    padding: 14px;
+    margin: 7px 0;
+    border: none;
+    border-radius: 10px;
+    background: #16283b;
+    color: white;
+    font-size: 16px;
 }
 
 button {
-width: 100%;
-margin-top: 18px;
-padding: 15px;
-border: none;
-border-radius: 10px;
-background: #16a085;
-color: white;
-font-size: 17px;
-font-weight: bold;
+    width: 100%;
+    margin-top: 18px;
+    padding: 15px;
+    border: none;
+    border-radius: 10px;
+    background: #16a085;
+    color: white;
+    font-size: 17px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+button:active {
+    transform: scale(0.98);
 }
 
 .signal-box {
-margin-top: 22px;
-padding: 20px;
-border-radius: 15px;
-background: #13263a;
+    margin-top: 22px;
+    padding: 20px;
+    border-radius: 15px;
+    background: #13263a;
+}
+
+.signal-title {
+    color: #9fb3c8;
+    font-size: 13px;
 }
 
 #signal {
-font-size: 27px;
-font-weight: bold;
-margin: 12px 0;
+    font-size: 27px;
+    font-weight: bold;
+    margin: 12px 0;
+}
+
+#details {
+    color: #9fb3c8;
+    font-size: 14px;
 }
 
 .grid {
-display: grid;
-grid-template-columns: 1fr 1fr;
-gap: 10px;
-margin-top: 15px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 15px;
 }
 
 .box {
-background: #16283b;
-padding: 12px;
-border-radius: 10px;
+    background: #16283b;
+    padding: 12px;
+    border-radius: 10px;
 }
 
 .box span {
-display: block;
-font-size: 12px;
-color: #8fa5ba;
-margin-bottom: 5px;
+    display: block;
+    font-size: 12px;
+    color: #8fa5ba;
+    margin-bottom: 5px;
 }
 
 .box strong {
-font-size: 16px;
+    font-size: 16px;
 }
 
 .status {
-margin-top: 18px;
-color: #72e6a8;
-font-size: 13px;
+    margin-top: 18px;
+    color: #72e6a8;
+    font-size: 13px;
 }
 
 .warning {
-margin-top: 15px;
-font-size: 11px;
-color: #8295a8;
-line-height: 1.5;
+    margin-top: 15px;
+    font-size: 11px;
+    color: #8295a8;
+    line-height: 1.5;
+}
+
+.closed {
+    color: #ff6b6b !important;
+}
+
+.up {
+    color: #4cd97b !important;
+}
+
+.down {
+    color: #ff6b6b !important;
+}
+
+.wait {
+    color: #ffc857 !important;
 }
 
 </style>
 
 </head>
 
+
 <body>
 
 <div class="container">
 
-<h1>
-🤖 AI SIGNAL PRO
-</h1>
+    <h1>
+        🤖 AI SIGNAL PRO
+    </h1>
 
-<div class="subtitle">
-EMA + RSI + Candle Analysis
+    <div class="subtitle">
+        EMA + RSI + Candle Analysis
+    </div>
+
+
+    <!-- REAL MARKET PAIR -->
+
+    <select id="pair">
+
+        {% for pair in pairs %}
+
+        <option value="{{ pair }}">
+            {{ pair }}
+        </option>
+
+        {% endfor %}
+
+    </select>
+
+
+    <!-- TIMEFRAME -->
+
+    <select id="timeframe">
+
+        <option value="1">
+            1 Minute
+        </option>
+
+        <option value="2">
+            2 Minutes
+        </option>
+
+        <option value="3">
+            3 Minutes
+        </option>
+
+        <option value="5">
+            5 Minutes
+        </option>
+
+        <option value="10">
+            10 Minutes
+        </option>
+
+        <option value="15">
+            15 Minutes
+        </option>
+
+        <option value="30">
+            30 Minutes
+        </option>
+
+        <option value="60">
+            1 Hour
+        </option>
+
+        <option value="240">
+            4 Hours
+        </option>
+
+    </select>
+
+
+    <button onclick="generateSignal()">
+
+        ⚡ GENERATE SIGNAL
+
+    </button>
+
+
+    <div class="signal-box">
+
+        <div class="signal-title">
+            CURRENT SIGNAL
+        </div>
+
+
+        <div id="signal">
+            WAITING...
+        </div>
+
+
+        <div id="details">
+            Select pair and timeframe
+        </div>
+
+
+        <div class="grid">
+
+            <div class="box">
+
+                <span>
+                    PRICE
+                </span>
+
+                <strong id="price">
+                    —
+                </strong>
+
+            </div>
+
+
+            <div class="box">
+
+                <span>
+                    EMA 50
+                </span>
+
+                <strong id="ema">
+                    —
+                </strong>
+
+            </div>
+
+
+            <div class="box">
+
+                <span>
+                    RSI 14
+                </span>
+
+                <strong id="rsi">
+                    —
+                </strong>
+
+            </div>
+
+
+            <div class="box">
+
+                <span>
+                    CANDLE
+                </span>
+
+                <strong id="candle">
+                    —
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <div class="grid">
+
+            <div class="box">
+
+                <span>
+                    TREND
+                </span>
+
+                <strong id="trend">
+                    —
+                </strong>
+
+            </div>
+
+
+            <div class="box">
+
+                <span>
+                    RULE SCORE
+                </span>
+
+                <strong id="confidence">
+                    —
+                </strong>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="status">
+
+        🟢 Real Market Data
+
+    </div>
+
+
+    <div class="warning">
+
+        Indicator-based analysis only.<br>
+
+        Rule Score is not a probability of winning.<br>
+
+        No guaranteed results.
+
+    </div>
+
 </div>
 
-<select id="pair">
-
-{% for pair in pairs %}
-
-<option value="{{ pair }}">
-{{ pair }}
-</option>
-
-{% endfor %}
-
-</select>
-
-<select id="timeframe">
-
-<option value="1">1 Minute</option>
-
-<option value="2">2 Minutes</option>
-
-<option value="3">3 Minutes</option>
-
-<option value="5">5 Minutes</option>
-
-<option value="10">10 Minutes</option>
-
-<option value="15">15 Minutes</option>
-
-<option value="30">30 Minutes</option>
-
-<option value="60">1 Hour</option>
-
-<option value="240">4 Hours</option>
-
-</select>
-
-<button onclick="generateSignal()">
-⚡ GENERATE SIGNAL
-</button>
-
-<div class="signal-box">
-
-<div>
-CURRENT SIGNAL
-</div>
-
-<div id="signal">
-WAITING...
-</div>
-
-<div id="details">
-Select pair and timeframe
-</div>
-
-<div class="grid">
-
-<div class="box">
-
-<span>PRICE</span>
-
-<strong id="price">—</strong>
-
-</div>
-
-<div class="box">
-
-<span>EMA 50</span>
-
-<strong id="ema">—</strong>
-
-</div>
-
-<div class="box">
-
-<span>RSI 14</span>
-
-<strong id="rsi">—</strong>
-
-</div>
-
-<div class="box">
-
-<span>CANDLE</span>
-
-<strong id="candle">—</strong>
-
-</div>
-
-</div>
-
-<div class="grid">
-
-<div class="box">
-
-<span>TREND</span>
-
-<strong id="trend">—</strong>
-
-</div>
-
-<div class="box">
-
-<span>RULE SCORE</span>
-
-<strong id="confidence">—</strong>
-
-</div>
-
-</div>
-
-</div>
-
-<div class="status">
-🟢 Real Market Data Connected
-</div>
-
-<div class="warning">
-Indicator-based analysis only.
-Rule score is not a probability of winning.
-No guaranteed results.
-</div>
-
-</div>
 
 <script>
 
 async function generateSignal() {
 
-const pair =
-document.getElementById(
-"pair"
-).value;
+    const pair =
+        document.getElementById("pair").value;
 
-const timeframe =
-document.getElementById(
-"timeframe"
-).value;
+    const timeframe =
+        document.getElementById("timeframe").value;
 
-const signal =
-document.getElementById(
-"signal"
-);
+    const signal =
+        document.getElementById("signal");
 
-const details =
-document.getElementById(
-"details"
-);
+    const details =
+        document.getElementById("details");
 
-signal.innerText =
-"⏳ ANALYZING...";
 
-details.innerText =
-"Fetching market data...";
+    // Reset signal style
 
-try {
+    signal.className = "";
 
-const response =
-await fetch(
-"/api/market?symbol=" +
-encodeURIComponent(pair) +
-"&timeframe=" +
-encodeURIComponent(timeframe)
-);
 
-const data =
-await response.json();
+    signal.innerText =
+        "⏳ ANALYZING...";
 
-if (data.error) {
+    details.innerText =
+        "Checking real market status...";
 
-signal.innerText =
-"⚠️ ERROR";
 
-details.innerText =
-data.error;
+    // Reset values
 
-return;
+    document.getElementById("price").innerText = "—";
+    document.getElementById("ema").innerText = "—";
+    document.getElementById("rsi").innerText = "—";
+    document.getElementById("candle").innerText = "—";
+    document.getElementById("trend").innerText = "—";
+    document.getElementById("confidence").innerText = "—";
 
-}
 
-document.getElementById(
-"price"
-).innerText =
-data.price;
+    try {
 
-document.getElementById(
-"ema"
-).innerText =
-data.ema50;
+        const response = await fetch(
+            "/api/market?symbol=" +
+            encodeURIComponent(pair) +
+            "&timeframe=" +
+            encodeURIComponent(timeframe)
+        );
 
-document.getElementById(
-"rsi"
-).innerText =
-data.rsi14;
 
-document.getElementById(
-"candle"
-).innerText =
-data.candle;
+        const data =
+            await response.json();
 
-document.getElementById(
-"trend"
-).innerText =
-data.trend;
 
-document.getElementById(
-"confidence"
-).innerText =
-data.confidence + "%";
+        /*
+         * MARKET CLOSED
+         */
 
-if (
-data.signal ===
-"CALL / UP"
-) {
+        if (data.market_open === false) {
 
-signal.innerText =
-"⬆️ CALL / UP";
+            signal.innerText =
+                "🔴 MARKET CLOSED";
 
-}
+            signal.className =
+                "closed";
 
-else if (
-data.signal ===
-"PUT / DOWN"
-) {
+            details.innerText =
+                data.message ||
+                "Real Forex market is currently closed.";
 
-signal.innerText =
-"⬇️ PUT / DOWN";
+            return;
 
-}
+        }
 
-else {
 
-signal.innerText =
-"⏸️ WAIT";
+        /*
+         * SERVER / API ERROR
+         */
 
-}
+        if (data.error) {
 
-details.innerText =
-data.symbol +
-" • " +
-data.timeframe;
+            signal.innerText =
+                "⚠️ NO SIGNAL";
 
-}
+            details.innerText =
+                data.error;
 
-catch (error) {
+            return;
 
-signal.innerText =
-"⚠️ ERROR";
+        }
 
-details.innerText =
-"Server connection failed.";
 
-}
+        /*
+         * SHOW MARKET DATA
+         */
+
+        document.getElementById(
+            "price"
+        ).innerText =
+            data.price;
+
+
+        document.getElementById(
+            "ema"
+        ).innerText =
+            data.ema50;
+
+
+        document.getElementById(
+            "rsi"
+        ).innerText =
+            data.rsi14;
+
+
+        document.getElementById(
+            "candle"
+        ).innerText =
+            data.candle;
+
+
+        document.getElementById(
+            "trend"
+        ).innerText =
+            data.trend;
+
+
+        document.getElementById(
+            "confidence"
+        ).innerText =
+            data.confidence + "%";
+
+
+        /*
+         * SHOW SIGNAL
+         */
+
+        if (
+            data.signal ===
+            "CALL / UP"
+        ) {
+
+            signal.innerText =
+                "⬆️ CALL / UP";
+
+            signal.className =
+                "up";
+
+        }
+
+
+        else if (
+            data.signal ===
+            "PUT / DOWN"
+        ) {
+
+            signal.innerText =
+                "⬇️ PUT / DOWN";
+
+            signal.className =
+                "down";
+
+        }
+
+
+        else {
+
+            signal.innerText =
+                "⏸️ WAIT";
+
+            signal.className =
+                "wait";
+
+        }
+
+
+        details.innerText =
+            data.symbol +
+            " • " +
+            data.timeframe;
+
+
+    }
+
+
+    catch (error) {
+
+        signal.innerText =
+            "⚠️ CONNECTION ERROR";
+
+        details.innerText =
+            "Unable to connect to the server.";
+
+    }
 
 }
 
