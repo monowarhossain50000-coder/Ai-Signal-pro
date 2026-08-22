@@ -29,7 +29,6 @@ def calculate_rsi(prices, period=14):
 
     for i in range(1, len(prices)):
         change = prices[i] - prices[i - 1]
-
         gains.append(max(change, 0))
         losses.append(max(-change, 0))
 
@@ -64,16 +63,65 @@ def market():
     symbol = "EUR/USD"
     interval = "1min"
 
-    url = "https://api.twelvedata.com/time_series"
+    # Check forex market status
+    status_url = "https://api.twelvedata.com/market_state"
 
-    params = {
-        "symbol": symbol,
-        "interval": interval,
-        "outputsize": 100,
+    status_params = {
         "apikey": API_KEY
     }
 
     try:
+
+        status_response = requests.get(
+            status_url,
+            params=status_params,
+            timeout=15
+        )
+
+        status_data = status_response.json()
+
+        # Find forex/physical currency market state
+        market_open = True
+
+        if isinstance(status_data, list):
+
+            for market in status_data:
+
+                name = str(
+                    market.get("name", "")
+                ).lower()
+
+                if (
+                    "forex" in name
+                    or "currency" in name
+                    or "physical currency" in name
+                ):
+
+                    market_open = market.get(
+                        "is_market_open",
+                        False
+                    )
+
+                    break
+
+        # If API explicitly says closed
+        if market_open is False:
+
+            return jsonify({
+                "market_open": False,
+                "signal": "MARKET CLOSED",
+                "message": "Forex market is currently closed."
+            })
+
+        # Get candles
+        url = "https://api.twelvedata.com/time_series"
+
+        params = {
+            "symbol": symbol,
+            "interval": interval,
+            "outputsize": 100,
+            "apikey": API_KEY
+        }
 
         response = requests.get(
             url,
@@ -84,6 +132,7 @@ def market():
         data = response.json()
 
         if "values" not in data:
+
             return jsonify({
                 "error": data.get(
                     "message",
@@ -91,9 +140,9 @@ def market():
                 )
             }), 400
 
-        candles = data["values"]
-
-        candles = list(reversed(candles))
+        candles = list(
+            reversed(data["values"])
+        )
 
         closes = [
             float(c["close"])
@@ -101,13 +150,14 @@ def market():
         ]
 
         current = candles[-1]
-        previous = candles[-2]
 
-        current_price = float(current["close"])
+        current_price = float(
+            current["close"]
+        )
 
-        previous_close = float(previous["close"])
-
-        open_price = float(current["open"])
+        open_price = float(
+            current["open"]
+        )
 
         ema50 = calculate_ema(
             closes,
@@ -119,65 +169,69 @@ def market():
             14
         )
 
-        # Candle direction
         if current_price > open_price:
             candle = "BULLISH"
+
         elif current_price < open_price:
             candle = "BEARISH"
+
         else:
             candle = "DOJI"
 
-        # EMA trend
         if current_price > ema50:
             ema_trend = "ABOVE EMA"
+
         elif current_price < ema50:
             ema_trend = "BELOW EMA"
+
         else:
             ema_trend = "AT EMA"
 
-        # Signal scoring
         call_score = 0
         put_score = 0
 
-        # Price vs EMA
         if current_price > ema50:
             call_score += 1
+
         elif current_price < ema50:
             put_score += 1
 
-        # RSI
         if rsi14 > 50:
             call_score += 1
+
         elif rsi14 < 50:
             put_score += 1
 
-        # Candle
         if candle == "BULLISH":
             call_score += 1
+
         elif candle == "BEARISH":
             put_score += 1
 
-        # Final signal
-        if call_score >= 3:
-            signal = "CALL / UP"
-            score = 3
+        if call_score == 3:
 
-        elif put_score >= 3:
+            signal = "CALL / UP"
+
+        elif put_score == 3:
+
             signal = "PUT / DOWN"
-            score = 3
 
         else:
+
             signal = "WAIT"
-            score = max(
-                call_score,
-                put_score
-            )
+
+        score = max(
+            call_score,
+            put_score
+        )
 
         confidence = int(
             (score / 3) * 100
         )
 
         return jsonify({
+
+            "market_open": True,
 
             "symbol": symbol,
 
