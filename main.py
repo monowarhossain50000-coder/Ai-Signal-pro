@@ -11,10 +11,8 @@ def calculate_ema(prices, period=50):
     if len(prices) < period:
         return None
 
-    sma = sum(prices[:period]) / period
+    ema = sum(prices[:period]) / period
     multiplier = 2 / (period + 1)
-
-    ema = sma
 
     for price in prices[period:]:
         ema = (price - ema) * multiplier + ema
@@ -32,12 +30,8 @@ def calculate_rsi(prices, period=14):
     for i in range(1, len(prices)):
         change = prices[i] - prices[i - 1]
 
-        if change > 0:
-            gains.append(change)
-            losses.append(0)
-        else:
-            gains.append(0)
-            losses.append(abs(change))
+        gains.append(max(change, 0))
+        losses.append(max(-change, 0))
 
     avg_gain = sum(gains[:period]) / period
     avg_loss = sum(losses[:period]) / period
@@ -99,39 +93,119 @@ def market():
 
         candles = data["values"]
 
-        prices = []
+        candles = list(reversed(candles))
 
-        for candle in reversed(candles):
-            prices.append(float(candle["close"]))
+        closes = [
+            float(c["close"])
+            for c in candles
+        ]
 
-        current_price = prices[-1]
+        current = candles[-1]
+        previous = candles[-2]
+
+        current_price = float(current["close"])
+
+        previous_close = float(previous["close"])
+
+        open_price = float(current["open"])
 
         ema50 = calculate_ema(
-            prices,
+            closes,
             50
         )
 
         rsi14 = calculate_rsi(
-            prices,
+            closes,
             14
         )
 
-        if ema50 is None or rsi14 is None:
-            signal = "WAIT"
-        elif current_price > ema50 and rsi14 > 50:
+        # Candle direction
+        if current_price > open_price:
+            candle = "BULLISH"
+        elif current_price < open_price:
+            candle = "BEARISH"
+        else:
+            candle = "DOJI"
+
+        # EMA trend
+        if current_price > ema50:
+            ema_trend = "ABOVE EMA"
+        elif current_price < ema50:
+            ema_trend = "BELOW EMA"
+        else:
+            ema_trend = "AT EMA"
+
+        # Signal scoring
+        call_score = 0
+        put_score = 0
+
+        # Price vs EMA
+        if current_price > ema50:
+            call_score += 1
+        elif current_price < ema50:
+            put_score += 1
+
+        # RSI
+        if rsi14 > 50:
+            call_score += 1
+        elif rsi14 < 50:
+            put_score += 1
+
+        # Candle
+        if candle == "BULLISH":
+            call_score += 1
+        elif candle == "BEARISH":
+            put_score += 1
+
+        # Final signal
+        if call_score >= 3:
             signal = "CALL / UP"
-        elif current_price < ema50 and rsi14 < 50:
+            score = 3
+
+        elif put_score >= 3:
             signal = "PUT / DOWN"
+            score = 3
+
         else:
             signal = "WAIT"
+            score = max(
+                call_score,
+                put_score
+            )
+
+        confidence = int(
+            (score / 3) * 100
+        )
 
         return jsonify({
+
             "symbol": symbol,
+
             "interval": interval,
-            "price": round(current_price, 5),
-            "ema50": round(ema50, 5) if ema50 else None,
-            "rsi14": round(rsi14, 2) if rsi14 else None,
-            "signal": signal
+
+            "price": round(
+                current_price,
+                5
+            ),
+
+            "ema50": round(
+                ema50,
+                5
+            ),
+
+            "rsi14": round(
+                rsi14,
+                2
+            ),
+
+            "candle": candle,
+
+            "ema_trend": ema_trend,
+
+            "signal": signal,
+
+            "confidence": confidence
+
         })
 
     except Exception as e:
