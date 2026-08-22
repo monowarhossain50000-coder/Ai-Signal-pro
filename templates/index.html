@@ -27,34 +27,42 @@
             background: #0d1b2a;
             padding: 25px;
             border-radius: 20px;
-            box-shadow: 0 10px 35px rgba(0,0,0,.45);
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.45);
             text-align: center;
         }
 
         h1 {
-            margin-bottom: 5px;
+            margin: 0;
             font-size: 30px;
         }
 
         .subtitle {
             color: #9fb3c8;
-            margin-bottom: 25px;
+            margin: 8px 0 25px;
+        }
+
+        .label {
+            display: block;
+            text-align: left;
+            margin: 12px 0 6px;
+            color: #b8c7d9;
+            font-size: 14px;
         }
 
         select {
             width: 100%;
             padding: 14px;
-            margin: 8px 0;
             border: none;
             border-radius: 10px;
             background: #16283b;
             color: white;
             font-size: 16px;
+            outline: none;
         }
 
         button {
             width: 100%;
-            margin-top: 18px;
+            margin-top: 20px;
             padding: 15px;
             border: none;
             border-radius: 10px;
@@ -66,7 +74,7 @@
         }
 
         button:active {
-            transform: scale(.98);
+            transform: scale(0.98);
         }
 
         .signal-box {
@@ -76,16 +84,33 @@
             background: #13263a;
         }
 
+        .signal-title {
+            color: #9fb3c8;
+            font-size: 14px;
+        }
+
         #signal {
             font-size: 28px;
             font-weight: bold;
-            margin: 10px 0;
+            margin: 12px 0;
         }
 
-        .note {
-            margin-top: 20px;
-            font-size: 12px;
-            color: #8295a8;
+        #details {
+            color: #9fb3c8;
+            font-size: 14px;
+        }
+
+        .status {
+            margin-top: 18px;
+            font-size: 13px;
+            color: #7f93a8;
+        }
+
+        .warning {
+            margin-top: 18px;
+            font-size: 11px;
+            color: #7f93a8;
+            line-height: 1.5;
         }
     </style>
 </head>
@@ -95,7 +120,12 @@
 <div class="container">
 
     <h1>🤖 AI SIGNAL PRO</h1>
-    <div class="subtitle">Smart Trading Signal</div>
+
+    <div class="subtitle">
+        Smart Trading Signal
+    </div>
+
+    <label class="label">Currency Pair</label>
 
     <select id="pair">
         <option>EUR/USD</option>
@@ -104,6 +134,8 @@
         <option>EUR/JPY</option>
         <option>GBP/JPY</option>
     </select>
+
+    <label class="label">Timeframe</label>
 
     <select id="timeframe">
         <option>1 Minute</option>
@@ -116,33 +148,56 @@
     </button>
 
     <div class="signal-box">
-        <div>Current Signal</div>
-        <div id="signal">WAITING...</div>
-        <div id="details">Select pair and generate signal</div>
+
+        <div class="signal-title">
+            CURRENT SIGNAL
+        </div>
+
+        <div id="signal">
+            WAITING...
+        </div>
+
+        <div id="details">
+            Select pair and generate signal
+        </div>
+
     </div>
 
-    <div class="note">
-        Demo signal only. Not financial advice.
+    <div class="status">
+        🟢 System Online
+    </div>
+
+    <div class="warning">
+        Demo signal only. This is not financial advice.
     </div>
 
 </div>
 
 <script>
+
 function generateSignal() {
 
-    const signals = ["⬆️ CALL / UP", "⬇️ PUT / DOWN"];
+    const signals = [
+        "⬆️ CALL / UP",
+        "⬇️ PUT / DOWN"
+    ];
 
     const randomSignal =
         signals[Math.floor(Math.random() * signals.length)];
 
-    document.getElementById("signal").innerText = randomSignal;
+    const pair =
+        document.getElementById("pair").value;
 
-    const pair = document.getElementById("pair").value;
-    const timeframe = document.getElementById("timeframe").value;
+    const timeframe =
+        document.getElementById("timeframe").value;
+
+    document.getElementById("signal").innerText =
+        randomSignal;
 
     document.getElementById("details").innerText =
         pair + " • " + timeframe;
 }
+
 </script>
 
 </body>
