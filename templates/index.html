@@ -27,7 +27,6 @@
             background: #0d1b2a;
             padding: 25px;
             border-radius: 20px;
-            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.45);
             text-align: center;
         }
 
@@ -41,40 +40,27 @@
             margin: 8px 0 25px;
         }
 
-        .label {
-            display: block;
-            text-align: left;
-            margin: 12px 0 6px;
-            color: #b8c7d9;
-            font-size: 14px;
-        }
-
         select {
             width: 100%;
             padding: 14px;
-            border: none;
+            margin: 7px 0;
+            border: 0;
             border-radius: 10px;
             background: #16283b;
             color: white;
             font-size: 16px;
-            outline: none;
         }
 
         button {
             width: 100%;
-            margin-top: 20px;
+            margin-top: 18px;
             padding: 15px;
-            border: none;
+            border: 0;
             border-radius: 10px;
             background: #16a085;
             color: white;
             font-size: 17px;
             font-weight: bold;
-            cursor: pointer;
-        }
-
-        button:active {
-            transform: scale(0.98);
         }
 
         .signal-box {
@@ -82,11 +68,6 @@
             padding: 22px;
             border-radius: 15px;
             background: #13263a;
-        }
-
-        .signal-title {
-            color: #9fb3c8;
-            font-size: 14px;
         }
 
         #signal {
@@ -97,20 +78,18 @@
 
         #details {
             color: #9fb3c8;
-            font-size: 14px;
         }
 
         .status {
             margin-top: 18px;
+            color: #72e6a8;
             font-size: 13px;
-            color: #7f93a8;
         }
 
         .warning {
             margin-top: 18px;
+            color: #8295a8;
             font-size: 11px;
-            color: #7f93a8;
-            line-height: 1.5;
         }
     </style>
 </head>
@@ -122,25 +101,19 @@
     <h1>🤖 AI SIGNAL PRO</h1>
 
     <div class="subtitle">
-        Smart Trading Signal
+        Live Market Analysis
     </div>
 
-    <label class="label">Currency Pair</label>
-
     <select id="pair">
-        <option>EUR/USD</option>
-        <option>GBP/USD</option>
-        <option>USD/JPY</option>
-        <option>EUR/JPY</option>
-        <option>GBP/JPY</option>
+        <option value="EUR/USD">EUR/USD</option>
+        <option value="GBP/USD">GBP/USD</option>
+        <option value="USD/JPY">USD/JPY</option>
+        <option value="EUR/JPY">EUR/JPY</option>
+        <option value="GBP/JPY">GBP/JPY</option>
     </select>
 
-    <label class="label">Timeframe</label>
-
     <select id="timeframe">
-        <option>1 Minute</option>
-        <option>5 Minutes</option>
-        <option>15 Minutes</option>
+        <option value="1min">1 Minute</option>
     </select>
 
     <button onclick="generateSignal()">
@@ -149,16 +122,14 @@
 
     <div class="signal-box">
 
-        <div class="signal-title">
-            CURRENT SIGNAL
-        </div>
+        <div>LIVE SIGNAL</div>
 
         <div id="signal">
             WAITING...
         </div>
 
         <div id="details">
-            Select pair and generate signal
+            Press Generate Signal
         </div>
 
     </div>
@@ -168,34 +139,52 @@
     </div>
 
     <div class="warning">
-        Demo signal only. This is not financial advice.
+        Market analysis is informational only. No guaranteed results.
     </div>
 
 </div>
 
 <script>
 
-function generateSignal() {
+async function generateSignal() {
 
-    const signals = [
-        "⬆️ CALL / UP",
-        "⬇️ PUT / DOWN"
-    ];
+    const signal = document.getElementById("signal");
+    const details = document.getElementById("details");
 
-    const randomSignal =
-        signals[Math.floor(Math.random() * signals.length)];
+    signal.innerText = "⏳ ANALYZING...";
+    details.innerText = "Fetching market data...";
 
-    const pair =
-        document.getElementById("pair").value;
+    try {
 
-    const timeframe =
-        document.getElementById("timeframe").value;
+        const response = await fetch("/api/market");
+        const data = await response.json();
 
-    document.getElementById("signal").innerText =
-        randomSignal;
+        if (data.error) {
+            signal.innerText = "⚠️ ERROR";
+            details.innerText = data.error;
+            return;
+        }
 
-    document.getElementById("details").innerText =
-        pair + " • " + timeframe;
+        if (!data.values || data.values.length === 0) {
+            signal.innerText = "⚠️ NO DATA";
+            details.innerText = "Market data unavailable";
+            return;
+        }
+
+        const latest = data.values[0];
+
+        signal.innerText = "📊 DATA RECEIVED";
+
+        details.innerText =
+            "EUR/USD • 1 Minute • Price: " + latest.close;
+
+    } catch (error) {
+
+        signal.innerText = "⚠️ ERROR";
+        details.innerText =
+            "Could not connect to market data";
+
+    }
 }
 
 </script>
