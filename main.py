@@ -7,70 +7,51 @@ app = Flask(__name__)
 API_KEY = os.getenv("TWELVEDATA_API_KEY")
 
 REAL_PAIRS = [
-    "EUR/USD",
-    "GBP/USD",
-    "USD/JPY",
-    "USD/CHF",
-    "AUD/USD",
-    "USD/CAD",
-    "NZD/USD",
-
-    "EUR/GBP",
-    "EUR/JPY",
-    "EUR/CHF",
-    "EUR/AUD",
-    "EUR/CAD",
-    "EUR/NZD",
-
-    "GBP/JPY",
-    "GBP/CHF",
-    "GBP/AUD",
-    "GBP/CAD",
-    "GBP/NZD",
-
-    "AUD/JPY",
-    "CAD/JPY",
-    "CHF/JPY",
-    "NZD/JPY",
-
-    "AUD/CAD",
-    "AUD/CHF",
-    "AUD/NZD",
-    "CAD/CHF",
-    "NZD/CAD",
-    "NZD/CHF",
-
-    "USD/SGD",
-    "USD/HKD",
-    "USD/SEK",
-    "USD/NOK",
-    "USD/DKK",
-    "USD/ZAR",
-    "USD/TRY"
+    "EUR/USD", "GBP/USD", "USD/JPY", "USD/CHF",
+    "AUD/USD", "USD/CAD", "NZD/USD",
+    "EUR/GBP", "EUR/JPY", "EUR/CHF", "EUR/AUD",
+    "EUR/CAD", "EUR/NZD",
+    "GBP/JPY", "GBP/CHF", "GBP/AUD",
+    "GBP/CAD", "GBP/NZD",
+    "AUD/JPY", "CAD/JPY", "CHF/JPY", "NZD/JPY",
+    "AUD/CAD", "AUD/CHF", "AUD/NZD",
+    "CAD/CHF", "NZD/CAD", "NZD/CHF",
+    "USD/SGD", "USD/HKD", "USD/SEK",
+    "USD/NOK", "USD/DKK", "USD/ZAR", "USD/TRY"
 ]
 
+TIMEFRAMES = {
+    "1": 1,
+    "2": 2,
+    "3": 3,
+    "5": 5,
+    "10": 10,
+    "15": 15,
+    "30": 30,
+    "60": 60,
+    "240": 240
+}
 
-def calculate_ema(prices, period=50):
+
+def ema(prices, period=50):
 
     if len(prices) < period:
         return None
 
-    ema = sum(prices[:period]) / period
-
+    value = sum(prices[:period]) / period
     multiplier = 2 / (period + 1)
 
     for price in prices[period:]:
-
-        ema = (
-            (price - ema)
+        value = (
+            (price - value)
             * multiplier
-            + ema
+            + value
         )
 
-    return ema
+    return value
 
 
-def calculate_rsi(prices, period=14):
+def rsi(prices, period=14):
 
     if len(prices) <= period:
         return None
@@ -85,23 +66,18 @@ def calculate_rsi(prices, period=14):
         gains.append(max(change, 0))
         losses.append(max(-change, 0))
 
-    avg_gain = sum(
-        gains[:period]
-    ) / period
-
-    avg_loss = sum(
-        losses[:period]
-    ) / period
+    avg_gain = sum(gains[:period]) / period
+    avg_loss = sum(losses[:period]) / period
 
     for i in range(period, len(gains)):
 
         avg_gain = (
-            (avg_gain * (period - 1))
+            avg_gain * (period - 1)
             + gains[i]
         ) / period
 
         avg_loss = (
-            (avg_loss * (period - 1))
+            avg_loss * (period - 1)
             + losses[i]
         ) / period
 
@@ -110,9 +86,7 @@ def calculate_rsi(prices, period=14):
 
     rs = avg_gain / avg_loss
 
-    return 100 - (
-        100 / (1 + rs)
-    )
+    return 100 - (100 / (1 + rs))
 
 
 @app.route("/")
@@ -130,7 +104,7 @@ def market():
     if not API_KEY:
 
         return jsonify({
-            "error": "API key is not configured"
+            "error": "API key is missing"
         }), 500
 
     symbol = request.args.get(
@@ -138,215 +112,255 @@ def market():
         "EUR/USD"
     )
 
+    timeframe = request.args.get(
+        "timeframe",
+        "1"
+    )
+
     if symbol not in REAL_PAIRS:
 
         return jsonify({
-            "error": "Invalid market pair"
+            "error": "Invalid pair"
         }), 400
 
-    url = (
-        "https://api.twelvedata.com/"
-        "time_series"
+    if timeframe not in TIMEFRAMES:
+
+        return jsonify({
+            "error": "Invalid timeframe"
+        }), 400
+
+    minutes = TIMEFRAMES[timeframe]
+
+    # Twelve Data native intervals
+    if minutes in [1, 5, 15, 30, 60, 240]:
+
+        if minutes == 60:
+            interval = "1h"
+
+        elif minutes == 240:
+            interval = "4h"
+
+        else:
+            interval = f"{minutes}min"
+
+        params = {
+            "symbol": symbol,
+            "interval": interval,
+            "outputsize": 100,
+            "apikey": API_KEY
+        }
+
+        try:
+
+            response = requests.get(
+                "https://api.twelvedata.com/time_series",
+                params=params,
+                timeout=15
+            )
+
+            data = response.json()
+
+            if "values" not in data:
+
+                return jsonify({
+                    "error": data.get(
+                        "message",
+                        "Market data unavailable"
+                    )
+                }), 400
+
+            candles = list(
+                reversed(data["values"])
+            )
+
+        except Exception as e:
+
+            return jsonify({
+                "error": str(e)
+            }), 500
+
+    else:
+
+        # 2M and 3M are built from 1M candles
+
+        params = {
+            "symbol": symbol,
+            "interval": "1min",
+            "outputsize": 300,
+            "apikey": API_KEY
+        }
+
+        try:
+
+            response = requests.get(
+                "https://api.twelvedata.com/time_series",
+                params=params,
+                timeout=15
+            )
+
+            data = response.json()
+
+            if "values" not in data:
+
+                return jsonify({
+                    "error": data.get(
+                        "message",
+                        "Market data unavailable"
+                    )
+                }), 400
+
+            raw = list(
+                reversed(data["values"])
+            )
+
+            candles = []
+
+            step = minutes
+
+            for i in range(
+                0,
+                len(raw) - step + 1,
+                step
+            ):
+
+                group = raw[i:i + step]
+
+                candles.append({
+
+                    "open": group[0]["open"],
+
+                    "high": max(
+                        float(x["high"])
+                        for x in group
+                    ),
+
+                    "low": min(
+                        float(x["low"])
+                        for x in group
+                    ),
+
+                    "close": group[-1]["close"]
+                })
+
+        except Exception as e:
+
+            return jsonify({
+                "error": str(e)
+            }), 500
+
+    if len(candles) < 60:
+
+        return jsonify({
+            "error": "Not enough candle data"
+        }), 400
+
+    closes = [
+        float(x["close"])
+        for x in candles
+    ]
+
+    current = candles[-1]
+
+    price = float(
+        current["close"]
     )
 
-    params = {
+    open_price = float(
+        current["open"]
+    )
 
-        "symbol": symbol,
+    ema50 = ema(
+        closes,
+        50
+    )
 
-        "interval": "1min",
+    rsi14 = rsi(
+        closes,
+        14
+    )
 
-        "outputsize": 100,
+    if price > open_price:
+        candle = "BULLISH"
 
-        "apikey": API_KEY
-    }
+    elif price < open_price:
+        candle = "BEARISH"
 
-    try:
+    else:
+        candle = "DOJI"
 
-        response = requests.get(
-            url,
-            params=params,
-            timeout=15
-        )
+    if price > ema50:
+        trend = "ABOVE EMA"
 
-        data = response.json()
+    elif price < ema50:
+        trend = "BELOW EMA"
 
-        if "values" not in data:
+    else:
+        trend = "AT EMA"
 
-            return jsonify({
+    call_score = 0
+    put_score = 0
 
-                "error": data.get(
-                    "message",
-                    "Market data unavailable"
-                )
+    if price > ema50:
+        call_score += 1
+    elif price < ema50:
+        put_score += 1
 
-            }), 400
+    if rsi14 > 50:
+        call_score += 1
+    elif rsi14 < 50:
+        put_score += 1
 
-        candles = list(
-            reversed(
-                data["values"]
-            )
-        )
+    if candle == "BULLISH":
+        call_score += 1
+    elif candle == "BEARISH":
+        put_score += 1
 
-        closes = [
+    if call_score == 3:
+        signal = "CALL / UP"
 
-            float(c["close"])
+    elif put_score == 3:
+        signal = "PUT / DOWN"
 
-            for c in candles
-        ]
+    else:
+        signal = "WAIT"
 
-        current = candles[-1]
+    score = max(
+        call_score,
+        put_score
+    )
 
-        current_price = float(
-            current["close"]
-        )
-
-        open_price = float(
-            current["open"]
-        )
-
-        ema50 = calculate_ema(
-            closes,
-            50
-        )
-
-        rsi14 = calculate_rsi(
-            closes,
-            14
-        )
-
-        if ema50 is None:
-
-            return jsonify({
-                "error": "Not enough data for EMA 50"
-            }), 400
-
-        if rsi14 is None:
-
-            return jsonify({
-                "error": "Not enough data for RSI 14"
-            }), 400
-
-        if current_price > open_price:
-
-            candle = "BULLISH"
-
-        elif current_price < open_price:
-
-            candle = "BEARISH"
-
-        else:
-
-            candle = "DOJI"
-
-        if current_price > ema50:
-
-            ema_trend = "ABOVE EMA"
-
-        elif current_price < ema50:
-
-            ema_trend = "BELOW EMA"
-
-        else:
-
-            ema_trend = "AT EMA"
-
-        call_score = 0
-
-        put_score = 0
-
-        if current_price > ema50:
-
-            call_score += 1
-
-        elif current_price < ema50:
-
-            put_score += 1
-
-        if rsi14 > 50:
-
-            call_score += 1
-
-        elif rsi14 < 50:
-
-            put_score += 1
-
-        if candle == "BULLISH":
-
-            call_score += 1
-
-        elif candle == "BEARISH":
-
-            put_score += 1
-
-        if call_score == 3:
-
-            signal = "CALL / UP"
-
-        elif put_score == 3:
-
-            signal = "PUT / DOWN"
-
-        else:
-
-            signal = "WAIT"
-
-        score = max(
-            call_score,
-            put_score
-        )
-
-        rule_score = int(
-            (score / 3) * 100
-        )
-
-        return jsonify({
-
-            "market_open": True,
-
-            "symbol": symbol,
-
-            "interval": "1min",
-
-            "price": round(
-                current_price,
-                5
-            ),
-
-            "ema50": round(
-                ema50,
-                5
-            ),
-
-            "rsi14": round(
-                rsi14,
-                2
-            ),
-
-            "candle": candle,
-
-            "ema_trend": ema_trend,
-
-            "signal": signal,
-
-            "confidence": rule_score
-
-        })
-
-    except Exception as e:
-
-        return jsonify({
-
-            "error": str(e)
-
-        }), 500
-
-
-@app.route("/api/status")
-def status():
+    confidence = int(
+        (score / 3) * 100
+    )
 
     return jsonify({
 
-        "status": "online"
+        "symbol": symbol,
+
+        "timeframe": f"{minutes} Minute",
+
+        "price": round(
+            price,
+            5
+        ),
+
+        "ema50": round(
+            ema50,
+            5
+        ),
+
+        "rsi14": round(
+            rsi14,
+            2
+        ),
+
+        "candle": candle,
+
+        "trend": trend,
+
+        "signal": signal,
+
+        "confidence": confidence
 
     })
 
@@ -354,9 +368,6 @@ def status():
 if __name__ == "__main__":
 
     app.run(
-
         host="0.0.0.0",
-
         port=5000
-
     )
