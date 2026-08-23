@@ -153,10 +153,11 @@ TIMEFRAMES = {
 
 
 # =========================
-# FOREX MARKET CLOSED CHECK
+# FOREX MARKET CLOSED
 # =========================
 
 def forex_weekend_closed():
+
     now = datetime.now(timezone.utc)
 
     # Saturday
@@ -175,7 +176,7 @@ def forex_weekend_closed():
 
 
 # =========================
-# EMA CALCULATION
+# EMA 50
 # =========================
 
 def calculate_ema(prices, period=50):
@@ -188,13 +189,16 @@ def calculate_ema(prices, period=50):
     multiplier = 2 / (period + 1)
 
     for price in prices[period:]:
-        ema = ((price - ema) * multiplier) + ema
+
+        ema = (
+            (price - ema) * multiplier
+        ) + ema
 
     return ema
 
 
 # =========================
-# RSI CALCULATION
+# RSI 14
 # =========================
 
 def calculate_rsi(prices, period=14):
@@ -218,11 +222,13 @@ def calculate_rsi(prices, period=14):
     for i in range(period, len(gains)):
 
         avg_gain = (
-            (avg_gain * (period - 1)) + gains[i]
+            (avg_gain * (period - 1))
+            + gains[i]
         ) / period
 
         avg_loss = (
-            (avg_loss * (period - 1)) + losses[i]
+            (avg_loss * (period - 1))
+            + losses[i]
         ) / period
 
     if avg_loss == 0:
@@ -269,6 +275,7 @@ def market():
         "1"
     )
 
+
     # =========================
     # OTC MARKET
     # =========================
@@ -276,14 +283,37 @@ def market():
     if market_type == "otc":
 
         return jsonify({
+
             "market_open": True,
+
             "otc_available": False,
+
+            "data_source": "NOT_CONNECTED",
+
             "signal": "OTC DATA UNAVAILABLE",
+
             "symbol": symbol,
-            "timeframe": timeframe,
+
+            "timeframe": (
+                f"{TIMEFRAMES.get(timeframe, 1)} Minute"
+            ),
+
+            "price": None,
+
+            "ema50": None,
+
+            "rsi14": None,
+
+            "candle": None,
+
+            "trend": None,
+
+            "confidence": 0,
+
             "message": (
-                "Live Quotex OTC candle data is not "
-                "connected yet."
+                "Quotex OTC candle data is not "
+                "connected. No live OTC price "
+                "or signal is being generated."
             )
         })
 
@@ -295,25 +325,33 @@ def market():
     if not API_KEY:
 
         return jsonify({
+
             "market_open": False,
+
             "signal": "NO SIGNAL",
+
             "error": (
                 "Twelve Data API key is missing. "
                 "Please add TWELVEDATA_API_KEY."
             )
+
         }), 500
 
 
     # =========================
-    # SYMBOL CHECK
+    # REAL SYMBOL CHECK
     # =========================
 
     if symbol not in REAL_PAIRS:
 
         return jsonify({
+
             "market_open": False,
+
             "signal": "NO SIGNAL",
+
             "error": "Invalid real-market pair."
+
         }), 400
 
 
@@ -324,9 +362,13 @@ def market():
     if timeframe not in TIMEFRAMES:
 
         return jsonify({
+
             "market_open": False,
+
             "signal": "NO SIGNAL",
+
             "error": "Invalid timeframe."
+
         }), 400
 
 
@@ -340,13 +382,21 @@ def market():
     if forex_weekend_closed():
 
         return jsonify({
+
             "market_open": False,
+
             "signal": "MARKET CLOSED",
+
             "symbol": symbol,
-            "timeframe": f"{minutes} Minute",
+
+            "timeframe": (
+                f"{minutes} Minute"
+            ),
+
             "message": (
                 "Real Forex market is currently closed."
             )
+
         })
 
 
@@ -357,29 +407,41 @@ def market():
     if minutes in [1, 5, 15, 30, 60, 240]:
 
         if minutes == 60:
+
             interval = "1h"
 
         elif minutes == 240:
+
             interval = "4h"
 
         else:
+
             interval = f"{minutes}min"
 
 
         params = {
+
             "symbol": symbol,
+
             "interval": interval,
+
             "outputsize": 100,
+
             "apikey": API_KEY
+
         }
 
 
         try:
 
             response = requests.get(
+
                 "https://api.twelvedata.com/time_series",
+
                 params=params,
+
                 timeout=15
+
             )
 
             data = response.json()
@@ -388,12 +450,19 @@ def market():
             if "values" not in data:
 
                 return jsonify({
+
                     "market_open": True,
+
                     "signal": "NO SIGNAL",
+
                     "error": data.get(
+
                         "message",
+
                         "Market data unavailable."
+
                     )
+
                 }), 400
 
 
@@ -405,9 +474,13 @@ def market():
         except Exception as e:
 
             return jsonify({
+
                 "market_open": True,
+
                 "signal": "NO SIGNAL",
+
                 "error": str(e)
+
             }), 500
 
 
@@ -418,19 +491,28 @@ def market():
     else:
 
         params = {
+
             "symbol": symbol,
+
             "interval": "1min",
+
             "outputsize": 300,
+
             "apikey": API_KEY
+
         }
 
 
         try:
 
             response = requests.get(
+
                 "https://api.twelvedata.com/time_series",
+
                 params=params,
+
                 timeout=15
+
             )
 
             data = response.json()
@@ -439,12 +521,19 @@ def market():
             if "values" not in data:
 
                 return jsonify({
+
                     "market_open": True,
+
                     "signal": "NO SIGNAL",
+
                     "error": data.get(
+
                         "message",
+
                         "Market data unavailable."
+
                     )
+
                 }), 400
 
 
@@ -456,9 +545,13 @@ def market():
 
 
             for i in range(
+
                 0,
+
                 len(raw) - minutes + 1,
+
                 minutes
+
             ):
 
                 group = raw[
@@ -467,55 +560,75 @@ def market():
 
 
                 candles.append({
+
                     "open": group[0]["open"],
 
                     "high": max(
+
                         float(x["high"])
+
                         for x in group
+
                     ),
 
                     "low": min(
+
                         float(x["low"])
+
                         for x in group
+
                     ),
 
                     "close": group[-1]["close"]
+
                 })
 
 
         except Exception as e:
 
             return jsonify({
+
                 "market_open": True,
+
                 "signal": "NO SIGNAL",
+
                 "error": str(e)
+
             }), 500
 
 
     # =========================
-    # ENOUGH CANDLES?
+    # ENOUGH CANDLES
     # =========================
 
     if len(candles) < 60:
 
         return jsonify({
+
             "market_open": True,
+
             "signal": "NO SIGNAL",
+
             "error": "Not enough candle data."
+
         }), 400
 
 
     # =========================
-    # PRICES
+    # CLOSE PRICES
     # =========================
 
     closes = [
+
         float(c["close"])
+
         for c in candles
+
     ]
 
 
     current = candles[-1]
+
 
     price = float(
         current["close"]
@@ -544,11 +657,15 @@ def market():
     if ema50 is None or rsi14 is None:
 
         return jsonify({
+
             "market_open": True,
+
             "signal": "NO SIGNAL",
+
             "error": (
                 "Not enough data for indicators."
             )
+
         }), 400
 
 
@@ -649,10 +766,16 @@ def market():
     # =========================
 
     confidence = int(
+
         max(
             call_score,
             put_score
-        ) / 3 * 100
+        )
+
+        / 3
+
+        * 100
+
     )
 
 
@@ -666,7 +789,9 @@ def market():
 
         "symbol": symbol,
 
-        "timeframe": f"{minutes} Minute",
+        "timeframe": (
+            f"{minutes} Minute"
+        ),
 
         "price": round(
             price,
@@ -690,6 +815,7 @@ def market():
         "signal": signal,
 
         "confidence": confidence
+
     })
 
 
