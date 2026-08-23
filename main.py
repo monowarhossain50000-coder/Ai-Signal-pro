@@ -10,9 +10,9 @@ app = Flask(__name__)
 API_KEY = os.getenv("TWELVEDATA_API_KEY")
 
 
-# =========================
+# =========================================================
 # REAL MARKET PAIRS
-# =========================
+# =========================================================
 
 REAL_PAIRS = [
     "EUR/USD",
@@ -54,9 +54,9 @@ REAL_PAIRS = [
 ]
 
 
-# =========================
+# =========================================================
 # OTC PAIRS
-# =========================
+# =========================================================
 
 OTC_PAIRS = [
     "EUR/USD OTC",
@@ -135,9 +135,9 @@ OTC_PAIRS = [
 ]
 
 
-# =========================
+# =========================================================
 # TIMEFRAMES
-# =========================
+# =========================================================
 
 TIMEFRAMES = {
     "1": 1,
@@ -152,9 +152,48 @@ TIMEFRAMES = {
 }
 
 
-# =========================
+# =========================================================
+# OTC -> REFERENCE PAIR
+# =========================================================
+
+OTC_REFERENCE_PAIRS = {
+    "EUR/USD OTC": "EUR/USD",
+    "GBP/USD OTC": "GBP/USD",
+    "USD/JPY OTC": "USD/JPY",
+    "USD/CHF OTC": "USD/CHF",
+    "AUD/USD OTC": "AUD/USD",
+    "USD/CAD OTC": "USD/CAD",
+    "NZD/USD OTC": "NZD/USD",
+    "EUR/GBP OTC": "EUR/GBP",
+    "EUR/JPY OTC": "EUR/JPY",
+    "EUR/CHF OTC": "EUR/CHF",
+    "EUR/AUD OTC": "EUR/AUD",
+    "EUR/CAD OTC": "EUR/CAD",
+    "EUR/NZD OTC": "EUR/NZD",
+    "EUR/SGD OTC": "EUR/SGD",
+    "GBP/JPY OTC": "GBP/JPY",
+    "GBP/CHF OTC": "GBP/CHF",
+    "GBP/AUD OTC": "GBP/AUD",
+    "GBP/CAD OTC": "GBP/CAD",
+    "GBP/NZD OTC": "GBP/NZD",
+    "AUD/JPY OTC": "AUD/JPY",
+    "AUD/CHF OTC": "AUD/CHF",
+    "AUD/CAD OTC": "AUD/CAD",
+    "AUD/NZD OTC": "AUD/NZD",
+    "CAD/JPY OTC": "CAD/JPY",
+    "CAD/CHF OTC": "CAD/CHF",
+    "CHF/JPY OTC": "CHF/JPY",
+    "NZD/JPY OTC": "NZD/JPY",
+    "NZD/CAD OTC": "NZD/CAD",
+    "NZD/CHF OTC": "NZD/CHF",
+    "USD/ZAR OTC": "USD/ZAR",
+    "USD/TRY OTC": "USD/TRY",
+}
+
+
+# =========================================================
 # FOREX MARKET CLOSED
-# =========================
+# =========================================================
 
 def forex_weekend_closed():
 
@@ -175,9 +214,9 @@ def forex_weekend_closed():
     return False
 
 
-# =========================
+# =========================================================
 # EMA 50
-# =========================
+# =========================================================
 
 def calculate_ema(prices, period=50):
 
@@ -189,17 +228,14 @@ def calculate_ema(prices, period=50):
     multiplier = 2 / (period + 1)
 
     for price in prices[period:]:
-
-        ema = (
-            (price - ema) * multiplier
-        ) + ema
+        ema = ((price - ema) * multiplier) + ema
 
     return ema
 
 
-# =========================
+# =========================================================
 # RSI 14
-# =========================
+# =========================================================
 
 def calculate_rsi(prices, period=14):
 
@@ -222,13 +258,11 @@ def calculate_rsi(prices, period=14):
     for i in range(period, len(gains)):
 
         avg_gain = (
-            (avg_gain * (period - 1))
-            + gains[i]
+            (avg_gain * (period - 1)) + gains[i]
         ) / period
 
         avg_loss = (
-            (avg_loss * (period - 1))
-            + losses[i]
+            (avg_loss * (period - 1)) + losses[i]
         ) / period
 
     if avg_loss == 0:
@@ -239,9 +273,176 @@ def calculate_rsi(prices, period=14):
     return 100 - (100 / (1 + rs))
 
 
-# =========================
-# HOME PAGE
-# =========================
+# =========================================================
+# GET CANDLES FROM TWELVE DATA
+# =========================================================
+
+def get_candles(symbol, minutes):
+
+    if minutes == 60:
+        interval = "1h"
+
+    elif minutes == 240:
+        interval = "4h"
+
+    else:
+        interval = f"{minutes}min"
+
+    params = {
+        "symbol": symbol,
+        "interval": interval,
+        "outputsize": 100,
+        "apikey": API_KEY
+    }
+
+    response = requests.get(
+        "https://api.twelvedata.com/time_series",
+        params=params,
+        timeout=15
+    )
+
+    data = response.json()
+
+    if "values" not in data:
+
+        raise Exception(
+            data.get(
+                "message",
+                "Market data unavailable."
+            )
+        )
+
+    return list(
+        reversed(data["values"])
+    )
+
+
+# =========================================================
+# CREATE SIGNAL
+# =========================================================
+
+def create_signal(candles):
+
+    if len(candles) < 60:
+
+        raise Exception(
+            "Not enough candle data."
+        )
+
+    closes = [
+        float(c["close"])
+        for c in candles
+    ]
+
+    current = candles[-1]
+
+    price = float(
+        current["close"]
+    )
+
+    open_price = float(
+        current["open"]
+    )
+
+    ema50 = calculate_ema(
+        closes,
+        50
+    )
+
+    rsi14 = calculate_rsi(
+        closes,
+        14
+    )
+
+    if ema50 is None or rsi14 is None:
+
+        raise Exception(
+            "Not enough data for indicators."
+        )
+
+    # Candle
+
+    if price > open_price:
+        candle = "BULLISH"
+
+    elif price < open_price:
+        candle = "BEARISH"
+
+    else:
+        candle = "DOJI"
+
+    # Trend
+
+    if price > ema50:
+        trend = "ABOVE EMA"
+
+    elif price < ema50:
+        trend = "BELOW EMA"
+
+    else:
+        trend = "AT EMA"
+
+    # Scores
+
+    call_score = 0
+    put_score = 0
+
+    # Price vs EMA
+
+    if price > ema50:
+        call_score += 1
+
+    elif price < ema50:
+        put_score += 1
+
+    # RSI
+
+    if rsi14 > 50:
+        call_score += 1
+
+    elif rsi14 < 50:
+        put_score += 1
+
+    # Candle
+
+    if candle == "BULLISH":
+        call_score += 1
+
+    elif candle == "BEARISH":
+        put_score += 1
+
+    # Final signal
+
+    if call_score == 3:
+        signal = "CALL / UP"
+
+    elif put_score == 3:
+        signal = "PUT / DOWN"
+
+    else:
+        signal = "WAIT"
+
+    confidence = int(
+        max(
+            call_score,
+            put_score
+        ) / 3 * 100
+    )
+
+    return {
+        "price": round(price, 5),
+        "ema50": round(ema50, 5),
+        "rsi14": round(rsi14, 2),
+        "candle": candle,
+        "trend": trend,
+        "signal": signal,
+        "confidence": confidence
+    }
+
+
+# =========================================================
+# HOME
+# =========================================================
 
 @app.route("/")
 def home():
@@ -253,9 +454,9 @@ def home():
     )
 
 
-# =========================
+# =========================================================
 # MARKET API
-# =========================
+# =========================================================
 
 @app.route("/api/market")
 def market():
@@ -275,109 +476,145 @@ def market():
         "1"
     )
 
-
-    # =========================
-    # OTC MARKET
-    # =========================
-
-    if market_type == "otc":
-
-        return jsonify({
-
-            "market_open": True,
-
-            "otc_available": False,
-
-            "data_source": "NOT_CONNECTED",
-
-            "signal": "OTC DATA UNAVAILABLE",
-
-            "symbol": symbol,
-
-            "timeframe": (
-                f"{TIMEFRAMES.get(timeframe, 1)} Minute"
-            ),
-
-            "price": None,
-
-            "ema50": None,
-
-            "rsi14": None,
-
-            "candle": None,
-
-            "trend": None,
-
-            "confidence": 0,
-
-            "message": (
-                "Quotex OTC candle data is not "
-                "connected. No live OTC price "
-                "or signal is being generated."
-            )
-        })
-
-
-    # =========================
-    # API KEY CHECK
-    # =========================
-
-    if not API_KEY:
-
-        return jsonify({
-
-            "market_open": False,
-
-            "signal": "NO SIGNAL",
-
-            "error": (
-                "Twelve Data API key is missing. "
-                "Please add TWELVEDATA_API_KEY."
-            )
-
-        }), 500
-
-
-    # =========================
-    # REAL SYMBOL CHECK
-    # =========================
-
-    if symbol not in REAL_PAIRS:
-
-        return jsonify({
-
-            "market_open": False,
-
-            "signal": "NO SIGNAL",
-
-            "error": "Invalid real-market pair."
-
-        }), 400
-
-
-    # =========================
+    # =====================================================
     # TIMEFRAME CHECK
-    # =========================
+    # =====================================================
 
     if timeframe not in TIMEFRAMES:
 
         return jsonify({
-
             "market_open": False,
-
             "signal": "NO SIGNAL",
-
             "error": "Invalid timeframe."
-
         }), 400
-
 
     minutes = TIMEFRAMES[timeframe]
 
+    # =====================================================
+    # API KEY CHECK
+    # =====================================================
 
-    # =========================
+    if not API_KEY:
+
+        return jsonify({
+            "market_open": False,
+            "signal": "NO SIGNAL",
+            "error": (
+                "TWELVEDATA_API_KEY is missing."
+            )
+        }), 500
+
+    # =====================================================
+    # OTC MARKET
+    # =====================================================
+
+    if market_type == "otc":
+
+        reference_symbol = OTC_REFERENCE_PAIRS.get(
+            symbol
+        )
+
+        if not reference_symbol:
+
+            return jsonify({
+                "market_open": True,
+                "otc_available": False,
+                "signal": "NO SIGNAL",
+                "symbol": symbol,
+                "timeframe": f"{minutes} Minute",
+                "message": (
+                    "This OTC asset does not have "
+                    "a Twelve Data reference pair."
+                )
+            })
+
+        try:
+
+            candles = get_candles(
+                reference_symbol,
+                minutes
+            )
+
+            result = create_signal(
+                candles
+            )
+
+            return jsonify({
+
+                "market_open": True,
+
+                "otc_available": True,
+
+                "data_source": (
+                    "Twelve Data reference market"
+                ),
+
+                "quotex_otc": False,
+
+                "warning": (
+                    "This is a reference-market "
+                    "signal, not live Quotex OTC candle data."
+                ),
+
+                "symbol": symbol,
+
+                "reference_symbol": reference_symbol,
+
+                "timeframe": (
+                    f"{minutes} Minute"
+                ),
+
+                "price": result["price"],
+
+                "ema50": result["ema50"],
+
+                "rsi14": result["rsi14"],
+
+                "candle": result["candle"],
+
+                "trend": result["trend"],
+
+                "signal": result["signal"],
+
+                "confidence": result["confidence"]
+
+            })
+
+        except Exception as e:
+
+            return jsonify({
+
+                "market_open": True,
+
+                "otc_available": False,
+
+                "signal": "NO SIGNAL",
+
+                "symbol": symbol,
+
+                "timeframe": (
+                    f"{minutes} Minute"
+                ),
+
+                "error": str(e)
+
+            }), 400
+
+    # =====================================================
+    # REAL MARKET
+    # =====================================================
+
+    if symbol not in REAL_PAIRS:
+
+        return jsonify({
+            "market_open": False,
+            "signal": "NO SIGNAL",
+            "error": "Invalid real-market pair."
+        }), 400
+
+    # =====================================================
     # FOREX MARKET STATUS
-    # =========================
+    # =====================================================
 
     if forex_weekend_closed():
 
@@ -399,429 +636,71 @@ def market():
 
         })
 
-
-    # =========================
-    # REQUEST CANDLES
-    # =========================
-
-    if minutes in [1, 5, 15, 30, 60, 240]:
-
-        if minutes == 60:
-
-            interval = "1h"
-
-        elif minutes == 240:
-
-            interval = "4h"
-
-        else:
-
-            interval = f"{minutes}min"
-
-
-        params = {
-
-            "symbol": symbol,
-
-            "interval": interval,
-
-            "outputsize": 100,
-
-            "apikey": API_KEY
-
-        }
-
-
-        try:
-
-            response = requests.get(
-
-                "https://api.twelvedata.com/time_series",
-
-                params=params,
-
-                timeout=15
-
-            )
-
-            data = response.json()
-
-
-            if "values" not in data:
-
-                return jsonify({
-
-                    "market_open": True,
-
-                    "signal": "NO SIGNAL",
-
-                    "error": data.get(
-
-                        "message",
-
-                        "Market data unavailable."
-
-                    )
-
-                }), 400
-
-
-            candles = list(
-                reversed(data["values"])
-            )
-
-
-        except Exception as e:
-
-            return jsonify({
-
-                "market_open": True,
-
-                "signal": "NO SIGNAL",
-
-                "error": str(e)
-
-            }), 500
-
-
-    # =========================
-    # CUSTOM TIMEFRAME
-    # =========================
-
-    else:
-
-        params = {
-
-            "symbol": symbol,
-
-            "interval": "1min",
-
-            "outputsize": 300,
-
-            "apikey": API_KEY
-
-        }
-
-
-        try:
-
-            response = requests.get(
-
-                "https://api.twelvedata.com/time_series",
-
-                params=params,
-
-                timeout=15
-
-            )
-
-            data = response.json()
-
-
-            if "values" not in data:
-
-                return jsonify({
-
-                    "market_open": True,
-
-                    "signal": "NO SIGNAL",
-
-                    "error": data.get(
-
-                        "message",
-
-                        "Market data unavailable."
-
-                    )
-
-                }), 400
-
-
-            raw = list(
-                reversed(data["values"])
-            )
-
-            candles = []
-
-
-            for i in range(
-
-                0,
-
-                len(raw) - minutes + 1,
-
-                minutes
-
-            ):
-
-                group = raw[
-                    i:i + minutes
-                ]
-
-
-                candles.append({
-
-                    "open": group[0]["open"],
-
-                    "high": max(
-
-                        float(x["high"])
-
-                        for x in group
-
-                    ),
-
-                    "low": min(
-
-                        float(x["low"])
-
-                        for x in group
-
-                    ),
-
-                    "close": group[-1]["close"]
-
-                })
-
-
-        except Exception as e:
-
-            return jsonify({
-
-                "market_open": True,
-
-                "signal": "NO SIGNAL",
-
-                "error": str(e)
-
-            }), 500
-
-
-    # =========================
-    # ENOUGH CANDLES
-    # =========================
-
-    if len(candles) < 60:
-
-        return jsonify({
-
-            "market_open": True,
-
-            "signal": "NO SIGNAL",
-
-            "error": "Not enough candle data."
-
-        }), 400
-
-
-    # =========================
-    # CLOSE PRICES
-    # =========================
-
-    closes = [
-
-        float(c["close"])
-
-        for c in candles
-
-    ]
-
-
-    current = candles[-1]
-
-
-    price = float(
-        current["close"]
-    )
-
-    open_price = float(
-        current["open"]
-    )
-
-
-    # =========================
-    # INDICATORS
-    # =========================
-
-    ema50 = calculate_ema(
-        closes,
-        50
-    )
-
-    rsi14 = calculate_rsi(
-        closes,
-        14
-    )
-
-
-    if ema50 is None or rsi14 is None:
-
-        return jsonify({
-
-            "market_open": True,
-
-            "signal": "NO SIGNAL",
-
-            "error": (
-                "Not enough data for indicators."
-            )
-
-        }), 400
-
-
-    # =========================
-    # CANDLE TYPE
-    # =========================
-
-    if price > open_price:
-
-        candle = "BULLISH"
-
-    elif price < open_price:
-
-        candle = "BEARISH"
-
-    else:
-
-        candle = "DOJI"
-
-
-    # =========================
-    # TREND
-    # =========================
-
-    if price > ema50:
-
-        trend = "ABOVE EMA"
-
-    elif price < ema50:
-
-        trend = "BELOW EMA"
-
-    else:
-
-        trend = "AT EMA"
-
-
-    # =========================
-    # SIGNAL SCORE
-    # =========================
-
-    call_score = 0
-    put_score = 0
-
-
-    # Price vs EMA
-
-    if price > ema50:
-
-        call_score += 1
-
-    elif price < ema50:
-
-        put_score += 1
-
-
-    # RSI
-
-    if rsi14 > 50:
-
-        call_score += 1
-
-    elif rsi14 < 50:
-
-        put_score += 1
-
-
-    # Candle
-
-    if candle == "BULLISH":
-
-        call_score += 1
-
-    elif candle == "BEARISH":
-
-        put_score += 1
-
-
-    # =========================
-    # FINAL SIGNAL
-    # =========================
-
-    if call_score == 3:
-
-        signal = "CALL / UP"
-
-    elif put_score == 3:
-
-        signal = "PUT / DOWN"
-
-    else:
-
-        signal = "WAIT"
-
-
-    # =========================
-    # CONFIDENCE
-    # =========================
-
-    confidence = int(
-
-        max(
-            call_score,
-            put_score
+    # =====================================================
+    # REAL MARKET DATA
+    # =====================================================
+
+    try:
+
+        candles = get_candles(
+            symbol,
+            minutes
         )
 
-        / 3
+        result = create_signal(
+            candles
+        )
 
-        * 100
+        return jsonify({
 
-    )
+            "market_open": True,
+
+            "data_source": "Twelve Data",
+
+            "symbol": symbol,
+
+            "timeframe": (
+                f"{minutes} Minute"
+            ),
+
+            "price": result["price"],
+
+            "ema50": result["ema50"],
+
+            "rsi14": result["rsi14"],
+
+            "candle": result["candle"],
+
+            "trend": result["trend"],
+
+            "signal": result["signal"],
+
+            "confidence": result["confidence"]
+
+        })
+
+    except Exception as e:
+
+        return jsonify({
+
+            "market_open": True,
+
+            "signal": "NO SIGNAL",
+
+            "symbol": symbol,
+
+            "timeframe": (
+                f"{minutes} Minute"
+            ),
+
+            "error": str(e)
+
+        }), 400
 
 
-    # =========================
-    # RESPONSE
-    # =========================
-
-    return jsonify({
-
-        "market_open": True,
-
-        "symbol": symbol,
-
-        "timeframe": (
-            f"{minutes} Minute"
-        ),
-
-        "price": round(
-            price,
-            5
-        ),
-
-        "ema50": round(
-            ema50,
-            5
-        ),
-
-        "rsi14": round(
-            rsi14,
-            2
-        ),
-
-        "candle": candle,
-
-        "trend": trend,
-
-        "signal": signal,
-
-        "confidence": confidence
-
-    })
-
-
-# =========================
-# START FLASK
-# =========================
+# =========================================================
+# START SERVER
+# =========================================================
 
 if __name__ == "__main__":
 
