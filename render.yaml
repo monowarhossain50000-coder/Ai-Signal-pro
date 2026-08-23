@@ -1,1 +1,13 @@
+services:
+  - type: web
+    name: ai-signal-pro
+    runtime: python
+    plan: free
 
+    buildCommand: pip install -r requirements.txt
+
+    startCommand: gunicorn main:app
+
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.10
