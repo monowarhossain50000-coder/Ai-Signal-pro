@@ -225,10 +225,6 @@ def get_market_candles(symbol, minutes):
 
     now = time.time()
 
-    # -----------------------------------------------------
-    # CACHE
-    # -----------------------------------------------------
-
     with cache_lock:
 
         cached = market_cache.get(cache_key)
@@ -239,10 +235,6 @@ def get_market_candles(symbol, minutes):
 
             if age < CACHE_SECONDS:
                 return cached["data"]
-
-    # -----------------------------------------------------
-    # API GAP
-    # -----------------------------------------------------
 
     with cache_lock:
 
@@ -257,13 +249,11 @@ def get_market_candles(symbol, minutes):
             if cached:
                 return cached["data"]
 
-            time.sleep(API_MIN_GAP - elapsed)
+            time.sleep(
+                API_MIN_GAP - elapsed
+            )
 
         last_api_request = time.time()
-
-    # -----------------------------------------------------
-    # INTERVAL
-    # -----------------------------------------------------
 
     if minutes == 60:
         interval = "1h"
@@ -273,10 +263,6 @@ def get_market_candles(symbol, minutes):
 
     else:
         interval = "1min"
-
-    # -----------------------------------------------------
-    # REQUEST
-    # -----------------------------------------------------
 
     params = {
         "symbol": symbol,
@@ -319,10 +305,6 @@ def get_market_candles(symbol, minutes):
 
     candles = []
 
-    # -----------------------------------------------------
-    # NORMAL TIMEFRAMES
-    # -----------------------------------------------------
-
     if minutes in [1, 60, 240]:
 
         for item in raw:
@@ -344,10 +326,6 @@ def get_market_candles(symbol, minutes):
                 "close":
                     float(item["close"])
             })
-
-    # -----------------------------------------------------
-    # CUSTOM TIMEFRAMES
-    # -----------------------------------------------------
 
     else:
 
@@ -383,10 +361,6 @@ def get_market_candles(symbol, minutes):
                     float(group[-1]["close"])
             })
 
-    # -----------------------------------------------------
-    # CACHE SAVE
-    # -----------------------------------------------------
-
     with cache_lock:
 
         market_cache[cache_key] = {
@@ -418,6 +392,16 @@ def generate_running_signal(
 
     completed = candles[:-1]
 
+    if len(completed) < 210:
+
+        raise Exception(
+            "Not enough completed candles."
+        )
+
+    # =====================================================
+    # INDICATORS
+    # =====================================================
+
     closes = [
         float(c["close"])
         for c in completed[-250:]
@@ -439,129 +423,166 @@ def generate_running_signal(
             "Indicator calculation failed."
         )
 
-    # =====================================================
-    # RUNNING CANDLE
-    # =====================================================
+    price = float(running["close"])
 
     rc = candle_info(running)
 
     running_direction = rc["direction"]
-
     running_strength = rc["body_ratio"] * 100
-
     running_position = rc["close_position"]
 
-    price = float(running["close"])
-
     # =====================================================
-    # RECENT CANDLES
-    # =====================================================
-
-    recent = completed[-6:]
-
-    infos = [
-        candle_info(c)
-        for c in recent
-    ]
-
-    bullish_count = sum(
-        1
-        for x in infos
-        if x["direction"] == "BULLISH"
-    )
-
-    bearish_count = sum(
-        1
-        for x in infos
-        if x["direction"] == "BEARISH"
-    )
-
-    # =====================================================
-    # SCORES
+    # SCORE
     # =====================================================
 
     call_score = 0
     put_score = 0
 
-    # EMA 20 / 50
+    # -----------------------------------------------------
+    # TREND EMA
+    # -----------------------------------------------------
 
     if ema20 > ema50:
+
         call_score += 2
-    else:
+
+    elif ema20 < ema50:
+
         put_score += 2
 
-    # EMA 50 / 200
+    # -----------------------------------------------------
+    # LONG TREND
+    # -----------------------------------------------------
 
     if ema50 > ema200:
+
         call_score += 2
-    else:
+
+    elif ema50 < ema200:
+
         put_score += 2
 
+    # -----------------------------------------------------
     # PRICE VS EMA50
+    # -----------------------------------------------------
 
-    if price >= ema50:
-        call_score += 2
-    else:
-        put_score += 2
+    distance = abs(price - ema50)
 
+    # avoid treating tiny EMA differences as strong trend
+    if distance > 0:
+
+        if price > ema50:
+            call_score += 2
+
+        elif price < ema50:
+            put_score += 2
+
+    # -----------------------------------------------------
     # PRICE VS EMA200
+    # -----------------------------------------------------
 
-    if price >= ema200:
+    if price > ema200:
+
         call_score += 1
-    else:
+
+    elif price < ema200:
+
         put_score += 1
 
     # =====================================================
     # RSI
     # =====================================================
 
-    if rsi14 >= 55:
+    if rsi14 >= 60:
 
         call_score += 3
 
-    elif rsi14 >= 50:
+    elif rsi14 >= 55:
+
+        call_score += 2
+
+    elif rsi14 >= 51:
 
         call_score += 1
 
-    elif rsi14 <= 45:
+    elif rsi14 <= 40:
 
         put_score += 3
 
-    else:
+    elif rsi14 <= 45:
+
+        put_score += 2
+
+    elif rsi14 < 49:
 
         put_score += 1
 
     # =====================================================
-    # RECENT CANDLE MOMENTUM
+    # LAST 5 COMPLETED CANDLES
     # =====================================================
 
-    if bullish_count > bearish_count:
+    recent = completed[-5:]
+
+    bullish = 0
+    bearish = 0
+
+    for candle in recent:
+
+        direction = candle_info(
+            candle
+        )["direction"]
+
+        if direction == "BULLISH":
+
+            bullish += 1
+
+        elif direction == "BEARISH":
+
+            bearish += 1
+
+    if bullish > bearish:
 
         call_score += 2
 
-    elif bearish_count > bullish_count:
+    elif bearish > bullish:
 
         put_score += 2
 
     # =====================================================
-    # RECENT PRICE MOMENTUM
+    # LAST COMPLETED CANDLE
     # =====================================================
 
-    momentum_prices = [
+    last_completed = candle_info(
+        completed[-1]
+    )
+
+    if last_completed["direction"] == "BULLISH":
+
+        call_score += 1
+
+    elif last_completed["direction"] == "BEARISH":
+
+        put_score += 1
+
+    # =====================================================
+    # SHORT MOMENTUM
+    # =====================================================
+
+    momentum = [
         float(c["close"])
-        for c in completed[-5:]
+        for c in completed[-6:]
     ]
 
     rising = 0
     falling = 0
 
-    for i in range(1, len(momentum_prices)):
+    for i in range(1, len(momentum)):
 
-        if momentum_prices[i] > momentum_prices[i - 1]:
+        if momentum[i] > momentum[i - 1]:
 
             rising += 1
 
-        elif momentum_prices[i] < momentum_prices[i - 1]:
+        elif momentum[i] < momentum[i - 1]:
 
             falling += 1
 
@@ -579,11 +600,11 @@ def generate_running_signal(
 
     if running_direction == "BULLISH":
 
-        call_score += 3
+        call_score += 2
 
     elif running_direction == "BEARISH":
 
-        put_score += 3
+        put_score += 2
 
     # =====================================================
     # RUNNING CANDLE STRENGTH
@@ -592,17 +613,11 @@ def generate_running_signal(
     if running_strength >= 50:
 
         if running_direction == "BULLISH":
-            call_score += 2
 
-        elif running_direction == "BEARISH":
-            put_score += 2
-
-    elif running_strength >= 20:
-
-        if running_direction == "BULLISH":
             call_score += 1
 
         elif running_direction == "BEARISH":
+
             put_score += 1
 
     # =====================================================
@@ -611,82 +626,96 @@ def generate_running_signal(
 
     if running_direction == "BULLISH":
 
-        if running_position >= 0.55:
+        if running_position >= 0.60:
+
             call_score += 1
 
     elif running_direction == "BEARISH":
 
-        if running_position <= 0.45:
+        if running_position <= 0.40:
+
             put_score += 1
 
     # =====================================================
-    # DOJI HANDLING
-    # =====================================================
-
-    if running_direction == "DOJI":
-
-        if call_score >= put_score:
-            call_score += 1
-        else:
-            put_score += 1
-
-    # =====================================================
-    # FINAL SCORE
+    # FINAL DIRECTION
     # =====================================================
 
     total = call_score + put_score
 
     if total <= 0:
 
+        signal = "NO TRADE"
         confidence = 50
+        signal_level = "NO TRADE"
 
     else:
+
+        difference = abs(
+            call_score - put_score
+        )
 
         highest = max(
             call_score,
             put_score
         )
 
+        dominance = highest / total
+
         confidence = int(
             50 + (
-                (highest / total) - 0.5
+                dominance - 0.5
             ) * 100
         )
 
-    confidence = max(
-        50,
-        min(90, confidence)
-    )
+        confidence = max(
+            50,
+            min(90, confidence)
+        )
 
-    # =====================================================
-    # SIGNAL
-    # =====================================================
+        # -------------------------------------------------
+        # BALANCED DECISION
+        # -------------------------------------------------
 
-    if call_score >= put_score:
+        if call_score > put_score:
 
-        signal = "CALL / UP"
+            signal = "CALL / UP"
+
+        elif put_score > call_score:
+
+            signal = "PUT / DOWN"
+
+        else:
+
+            # exact tie:
+            # use RSI only as final tie-breaker
+
+            if rsi14 > 50:
+
+                signal = "CALL / UP"
+
+            elif rsi14 < 50:
+
+                signal = "PUT / DOWN"
+
+            else:
+
+                signal = "NO TRADE"
 
         if confidence >= 75:
+
             signal_level = "STRONG"
 
         elif confidence >= 65:
+
             signal_level = "GOOD"
 
-        else:
+        elif confidence >= 55:
+
             signal_level = "MODERATE"
 
-    else:
-
-        signal = "PUT / DOWN"
-
-        if confidence >= 75:
-            signal_level = "STRONG"
-
-        elif confidence >= 65:
-            signal_level = "GOOD"
-
         else:
-            signal_level = "MODERATE"
+
+            signal_level = "LOW"
 
     # =====================================================
     # TREND
@@ -724,7 +753,7 @@ def generate_running_signal(
     # RESULT
     # =====================================================
 
-    return {
+    result = {
 
         "market_open": True,
 
@@ -798,12 +827,22 @@ def generate_running_signal(
 
         "message":
             (
-                "Signal is generated for the "
-                "current running candle. "
-                "Direction can change while "
+                "Running candle signal. "
+                "Use the signal during the "
+                "first 30 seconds. "
+                "Signal can change while "
                 "the candle is forming."
             )
     }
+
+    if market_type == "otc":
+
+        result["warning"] = (
+            "OTC uses proxy market data. "
+            "It is not the direct Quotex OTC feed."
+        )
+
+    return result
 
 
 # =========================================================
@@ -869,7 +908,7 @@ def market():
         }), 400
 
     # =====================================================
-    # REAL
+    # REAL MARKET
     # =====================================================
 
     if market_type == "real":
@@ -895,7 +934,8 @@ def market():
 
                 "signal": "MARKET CLOSED",
 
-                "symbol": symbol,
+                "symbol":
+                    symbol,
 
                 "timeframe":
                     f"{TIMEFRAMES[timeframe]} Minute",
@@ -945,7 +985,7 @@ def market():
         }), 400
 
     # =====================================================
-    # GENERATE
+    # SIGNAL
     # =====================================================
 
     try:
