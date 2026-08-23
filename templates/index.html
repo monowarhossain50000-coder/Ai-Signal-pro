@@ -1,446 +1,436 @@
-import os
-import requests
-from datetime import datetime, timezone
-from flask import Flask, render_template, jsonify, request
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-app = Flask(__name__)
+    <title>AI Signal Pro</title>
 
-API_KEY = os.getenv("TWELVEDATA_API_KEY")
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #0b1220;
+            color: white;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: #151f32;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 7px;
+            font-weight: bold;
+        }
+
+        select,
+        button {
+            width: 100%;
+            padding: 13px;
+            margin-bottom: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        select {
+            background: #202c42;
+            color: white;
+        }
+
+        button {
+            background: #1677ff;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .signal {
+            text-align: center;
+            font-size: 28px;
+            font-weight: bold;
+            padding: 20px;
+            border-radius: 12px;
+            background: #202c42;
+            margin-top: 10px;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #2b3850;
+        }
+
+        .row:last-child {
+            border-bottom: none;
+        }
+
+        .value {
+            font-weight: bold;
+        }
+
+        .status {
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            background: #202c42;
+            margin-bottom: 15px;
+        }
+
+        .error {
+            color: #ff6b6b;
+        }
+
+        .small {
+            text-align: center;
+            color: #9ba8bd;
+            font-size: 13px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>🤖 AI SIGNAL PRO</h1>
+
+    <div class="card">
+
+        <label for="market">Market</label>
+
+        <select id="market" onchange="updatePairs()">
+            <option value="real">REAL MARKET</option>
+            <option value="otc">OTC MARKET</option>
+        </select>
 
 
-REAL_PAIRS = [
-    "EUR/USD", "GBP/USD", "USD/JPY", "USD/CHF",
-    "AUD/USD", "USD/CAD", "NZD/USD",
-    "EUR/GBP", "EUR/JPY", "EUR/CHF", "EUR/AUD",
-    "EUR/CAD", "EUR/NZD", "EUR/SGD",
-    "GBP/JPY", "GBP/CHF", "GBP/AUD",
-    "GBP/CAD", "GBP/NZD",
-    "AUD/JPY", "AUD/CHF", "AUD/CAD",
-    "AUD/NZD", "CAD/JPY", "CAD/CHF",
-    "CHF/JPY", "NZD/JPY", "NZD/CAD",
-    "NZD/CHF", "USD/SGD", "USD/HKD",
-    "USD/SEK", "USD/NOK", "USD/DKK",
-    "USD/ZAR", "USD/TRY"
-]
+        <label for="symbol">Currency / Asset</label>
+
+        <select id="symbol">
+            {% for pair in real_pairs %}
+            <option value="{{ pair }}" class="real-pair">
+                {{ pair }}
+            </option>
+            {% endfor %}
+        </select>
 
 
-OTC_PAIRS = [
-    "EUR/USD OTC", "GBP/USD OTC", "USD/JPY OTC",
-    "USD/CHF OTC", "AUD/USD OTC", "USD/CAD OTC",
-    "NZD/USD OTC", "EUR/GBP OTC", "EUR/JPY OTC",
-    "EUR/CHF OTC", "EUR/AUD OTC", "EUR/CAD OTC",
-    "EUR/NZD OTC", "EUR/SGD OTC",
-    "GBP/JPY OTC", "GBP/CHF OTC", "GBP/AUD OTC",
-    "GBP/CAD OTC", "GBP/NZD OTC",
-    "AUD/JPY OTC", "AUD/CHF OTC", "AUD/CAD OTC",
-    "AUD/NZD OTC", "CAD/JPY OTC", "CAD/CHF OTC",
-    "CHF/JPY OTC", "NZD/JPY OTC", "NZD/CAD OTC",
-    "NZD/CHF OTC",
+        <label for="timeframe">Timeframe</label>
 
-    "USD/BDT OTC", "USD/INR OTC", "USD/PKR OTC",
-    "USD/MXN OTC", "USD/COP OTC", "USD/EGP OTC",
-    "USD/IDR OTC", "USD/NGN OTC", "USD/PHP OTC",
-    "USD/ZAR OTC", "USD/TRY OTC", "USD/ARS OTC",
-    "USD/DZD OTC", "USD/BRL OTC",
+        <select id="timeframe">
 
-    "XAU/USD OTC", "XAG/USD OTC",
-    "US Crude OTC", "UK Brent OTC",
+            <option value="1">1 Minute</option>
+            <option value="2">2 Minutes</option>
+            <option value="3">3 Minutes</option>
+            <option value="5">5 Minutes</option>
+            <option value="10">10 Minutes</option>
+            <option value="15">15 Minutes</option>
+            <option value="30">30 Minutes</option>
+            <option value="60">60 Minutes</option>
+            <option value="240">240 Minutes</option>
 
-    "BTC/USD OTC", "ETH/USD OTC", "BCH/USD OTC",
-    "BNB/USD OTC", "XRP/USD OTC", "LTC/USD OTC",
-    "ADA/USD OTC", "DOT/USD OTC", "DOGE/USD OTC",
-    "SOL/USD OTC", "TON/USD OTC", "ETC/USD OTC",
-    "ZEC/USD OTC", "TRX/USD OTC", "AXS/USD OTC",
-    "AVAX/USD OTC", "APT/USD OTC", "ARB/USD OTC",
-
-    "Microsoft OTC", "Intel OTC",
-    "Johnson & Johnson OTC", "McDonald's OTC",
-    "Pfizer OTC", "Boeing OTC",
-    "American Express OTC", "Facebook OTC"
-]
+        </select>
 
 
-TIMEFRAMES = {
-    "1": 1,
-    "2": 2,
-    "3": 3,
-    "5": 5,
-    "10": 10,
-    "15": 15,
-    "30": 30,
-    "60": 60,
-    "240": 240
+        <button onclick="generateSignal()">
+            🚀 GENERATE SIGNAL
+        </button>
+
+    </div>
+
+
+    <div class="status" id="status">
+        Ready
+    </div>
+
+
+    <div class="card">
+
+        <div class="signal" id="signal">
+            WAIT
+        </div>
+
+    </div>
+
+
+    <div class="card">
+
+        <div class="row">
+            <span>Symbol</span>
+            <span class="value" id="resultSymbol">-</span>
+        </div>
+
+        <div class="row">
+            <span>Timeframe</span>
+            <span class="value" id="resultTimeframe">-</span>
+        </div>
+
+        <div class="row">
+            <span>Price</span>
+            <span class="value" id="price">-</span>
+        </div>
+
+        <div class="row">
+            <span>EMA 50</span>
+            <span class="value" id="ema50">-</span>
+        </div>
+
+        <div class="row">
+            <span>RSI 14</span>
+            <span class="value" id="rsi14">-</span>
+        </div>
+
+        <div class="row">
+            <span>Candle</span>
+            <span class="value" id="candle">-</span>
+        </div>
+
+        <div class="row">
+            <span>Trend</span>
+            <span class="value" id="trend">-</span>
+        </div>
+
+        <div class="row">
+            <span>Confidence</span>
+            <span class="value" id="confidence">-</span>
+        </div>
+
+    </div>
+
+
+    <div class="small">
+        AI Signal Pro • EMA 50 + RSI 14 + Candle
+    </div>
+
+</div>
+
+
+<script>
+
+const realPairs = [
+    {% for pair in real_pairs %}
+        "{{ pair }}",
+    {% endfor %}
+];
+
+const otcPairs = [
+    {% for pair in otc_pairs %}
+        "{{ pair }}",
+    {% endfor %}
+];
+
+
+function updatePairs() {
+
+    const market =
+        document.getElementById("market").value;
+
+    const symbol =
+        document.getElementById("symbol");
+
+    symbol.innerHTML = "";
+
+
+    let pairs = [];
+
+    if (market === "otc") {
+        pairs = otcPairs;
+    } else {
+        pairs = realPairs;
+    }
+
+
+    pairs.forEach(function(pair) {
+
+        const option =
+            document.createElement("option");
+
+        option.value = pair;
+        option.textContent = pair;
+
+        symbol.appendChild(option);
+
+    });
+
+
+    document.getElementById("signal").textContent = "WAIT";
+
+    document.getElementById("status").textContent =
+        "Ready";
+
 }
 
 
-def forex_weekend_closed():
-    now = datetime.now(timezone.utc)
+async function generateSignal() {
 
-    if now.weekday() == 5:
-        return True
+    const market =
+        document.getElementById("market").value;
 
-    if now.weekday() == 6 and now.hour < 21:
-        return True
+    const symbol =
+        document.getElementById("symbol").value;
 
-    if now.weekday() == 4 and now.hour >= 21:
-        return True
-
-    return False
+    const timeframe =
+        document.getElementById("timeframe").value;
 
 
-def calculate_ema(prices, period=50):
-    if len(prices) < period:
-        return None
+    const status =
+        document.getElementById("status");
 
-    ema = sum(prices[:period]) / period
-    multiplier = 2 / (period + 1)
-
-    for price in prices[period:]:
-        ema = ((price - ema) * multiplier) + ema
-
-    return ema
+    const signal =
+        document.getElementById("signal");
 
 
-def calculate_rsi(prices, period=14):
-    if len(prices) <= period:
-        return None
+    status.classList.remove("error");
 
-    gains = []
-    losses = []
+    status.textContent =
+        "Loading market data...";
 
-    for i in range(1, len(prices)):
-        change = prices[i] - prices[i - 1]
-
-        gains.append(max(change, 0))
-        losses.append(max(-change, 0))
-
-    avg_gain = sum(gains[:period]) / period
-    avg_loss = sum(losses[:period]) / period
-
-    for i in range(period, len(gains)):
-        avg_gain = (
-            avg_gain * (period - 1) + gains[i]
-        ) / period
-
-        avg_loss = (
-            avg_loss * (period - 1) + losses[i]
-        ) / period
-
-    if avg_loss == 0:
-        return 100
-
-    rs = avg_gain / avg_loss
-
-    return 100 - (100 / (1 + rs))
+    signal.textContent =
+        "LOADING...";
 
 
-@app.route("/")
-def home():
-    return render_template(
-        "index.html",
-        real_pairs=REAL_PAIRS,
-        otc_pairs=OTC_PAIRS
-    )
+    try {
+
+        const url =
+            `/api/market?market=${encodeURIComponent(market)}&symbol=${encodeURIComponent(symbol)}&timeframe=${encodeURIComponent(timeframe)}`;
 
 
-@app.route("/api/market")
-def market():
-
-    market_type = request.args.get("market", "real")
-    symbol = request.args.get("symbol", "EUR/USD")
-    timeframe = request.args.get("timeframe", "1")
+        const response =
+            await fetch(url);
 
 
-    # =====================================================
-    # OTC
-    # =====================================================
-
-    if market_type == "otc":
-
-        return jsonify({
-            "market_open": True,
-            "otc_available": False,
-            "signal": "OTC DATA UNAVAILABLE",
-            "symbol": symbol,
-            "timeframe": timeframe,
-            "message":
-                "Live Quotex OTC candle data is not connected yet."
-        })
+        const data =
+            await response.json();
 
 
-    # =====================================================
-    # REAL MARKET
-    # =====================================================
+        if (!response.ok) {
 
-    if not API_KEY:
-        return jsonify({
-            "market_open": False,
-            "signal": "NO SIGNAL",
-            "error": "Twelve Data API key is missing."
-        }), 500
+            throw new Error(
+                data.error || "Server error"
+            );
 
-
-    if symbol not in REAL_PAIRS:
-        return jsonify({
-            "market_open": False,
-            "signal": "NO SIGNAL",
-            "error": "Invalid real-market pair."
-        }), 400
-
-
-    if timeframe not in TIMEFRAMES:
-        return jsonify({
-            "market_open": False,
-            "signal": "NO SIGNAL",
-            "error": "Invalid timeframe."
-        }), 400
-
-
-    if forex_weekend_closed():
-        return jsonify({
-            "market_open": False,
-            "signal": "MARKET CLOSED",
-            "symbol": symbol,
-            "timeframe":
-                f"{TIMEFRAMES[timeframe]} Minute",
-            "message":
-                "Real Forex market is currently closed."
-        })
-
-
-    minutes = TIMEFRAMES[timeframe]
-
-
-    # =====================================================
-    # REQUEST CANDLES
-    # =====================================================
-
-    if minutes in [1, 5, 15, 30, 60, 240]:
-
-        if minutes == 60:
-            interval = "1h"
-        elif minutes == 240:
-            interval = "4h"
-        else:
-            interval = f"{minutes}min"
-
-        params = {
-            "symbol": symbol,
-            "interval": interval,
-            "outputsize": 100,
-            "apikey": API_KEY
         }
 
-        try:
-            response = requests.get(
-                "https://api.twelvedata.com/time_series",
-                params=params,
-                timeout=15
-            )
 
-            data = response.json()
+        document.getElementById("resultSymbol")
+            .textContent =
+            data.symbol || symbol;
 
-            if "values" not in data:
-                return jsonify({
-                    "market_open": True,
-                    "signal": "NO SIGNAL",
-                    "error": data.get(
-                        "message",
-                        "Market data unavailable."
-                    )
-                }), 400
 
-            candles = list(
-                reversed(data["values"])
-            )
+        document.getElementById("resultTimeframe")
+            .textContent =
+            data.timeframe || "-";
 
-        except Exception as e:
-            return jsonify({
-                "market_open": True,
-                "signal": "NO SIGNAL",
-                "error": str(e)
-            }), 500
 
-    else:
+        document.getElementById("price")
+            .textContent =
+            data.price ?? "-";
 
-        params = {
-            "symbol": symbol,
-            "interval": "1min",
-            "outputsize": 300,
-            "apikey": API_KEY
+
+        document.getElementById("ema50")
+            .textContent =
+            data.ema50 ?? "-";
+
+
+        document.getElementById("rsi14")
+            .textContent =
+            data.rsi14 ?? "-";
+
+
+        document.getElementById("candle")
+            .textContent =
+            data.candle || "-";
+
+
+        document.getElementById("trend")
+            .textContent =
+            data.trend || "-";
+
+
+        document.getElementById("confidence")
+            .textContent =
+            data.confidence !== undefined
+                ? data.confidence + "%"
+                : "-";
+
+
+        signal.textContent =
+            data.signal || "NO SIGNAL";
+
+
+        if (data.signal === "CALL / UP") {
+
+            signal.textContent =
+                "🟢 CALL / UP";
+
         }
 
-        try:
-            response = requests.get(
-                "https://api.twelvedata.com/time_series",
-                params=params,
-                timeout=15
-            )
+        else if (data.signal === "PUT / DOWN") {
 
-            data = response.json()
+            signal.textContent =
+                "🔴 PUT / DOWN";
 
-            if "values" not in data:
-                return jsonify({
-                    "market_open": True,
-                    "signal": "NO SIGNAL",
-                    "error": data.get(
-                        "message",
-                        "Market data unavailable."
-                    )
-                }), 400
+        }
 
-            raw = list(
-                reversed(data["values"])
-            )
+        else if (
+            data.signal === "OTC DATA UNAVAILABLE"
+        ) {
 
-            candles = []
+            signal.textContent =
+                "⚠️ OTC DATA UNAVAILABLE";
 
-            for i in range(
-                0,
-                len(raw) - minutes + 1,
-                minutes
-            ):
-
-                group = raw[
-                    i:i + minutes
-                ]
-
-                candles.append({
-                    "open": group[0]["open"],
-                    "high": max(
-                        float(x["high"])
-                        for x in group
-                    ),
-                    "low": min(
-                        float(x["low"])
-                        for x in group
-                    ),
-                    "close": group[-1]["close"]
-                })
-
-        except Exception as e:
-            return jsonify({
-                "market_open": True,
-                "signal": "NO SIGNAL",
-                "error": str(e)
-            }), 500
+        }
 
 
-    if len(candles) < 60:
-        return jsonify({
-            "market_open": True,
-            "signal": "NO SIGNAL",
-            "error": "Not enough candle data."
-        }), 400
+        status.textContent =
+            data.message ||
+            "Signal generated successfully";
 
 
-    closes = [
-        float(c["close"])
-        for c in candles
-    ]
+    }
 
-    current = candles[-1]
+    catch (error) {
 
-    price = float(current["close"])
-    open_price = float(current["open"])
+        signal.textContent =
+            "NO SIGNAL";
 
+        status.textContent =
+            error.message;
 
-    # =====================================================
-    # INDICATORS
-    # =====================================================
+        status.classList.add("error");
 
-    ema50 = calculate_ema(closes, 50)
-    rsi14 = calculate_rsi(closes, 14)
+    }
+
+}
 
 
-    if ema50 is None or rsi14 is None:
-        return jsonify({
-            "market_open": True,
-            "signal": "NO SIGNAL",
-            "error":
-                "Not enough data for indicators."
-        }), 400
+</script>
 
-
-    if price > open_price:
-        candle = "BULLISH"
-    elif price < open_price:
-        candle = "BEARISH"
-    else:
-        candle = "DOJI"
-
-
-    if price > ema50:
-        trend = "ABOVE EMA"
-    elif price < ema50:
-        trend = "BELOW EMA"
-    else:
-        trend = "AT EMA"
-
-
-    # =====================================================
-    # SIGNAL RULES
-    # =====================================================
-
-    call_score = 0
-    put_score = 0
-
-
-    if price > ema50:
-        call_score += 1
-    elif price < ema50:
-        put_score += 1
-
-
-    if rsi14 > 50:
-        call_score += 1
-    elif rsi14 < 50:
-        put_score += 1
-
-
-    if candle == "BULLISH":
-        call_score += 1
-    elif candle == "BEARISH":
-        put_score += 1
-
-
-    if call_score == 3:
-        signal = "CALL / UP"
-    elif put_score == 3:
-        signal = "PUT / DOWN"
-    else:
-        signal = "WAIT"
-
-
-    confidence = int(
-        max(call_score, put_score)
-        / 3
-        * 100
-    )
-
-
-    return jsonify({
-        "market_open": True,
-        "symbol": symbol,
-        "timeframe":
-            f"{minutes} Minute",
-        "price": round(price, 5),
-        "ema50": round(ema50, 5),
-        "rsi14": round(rsi14, 2),
-        "candle": candle,
-        "trend": trend,
-        "signal": signal,
-        "confidence": confidence
-    })
-
-
-if __name__ == "__main__":
-
-    port = int(
-        os.getenv("PORT", "5000")
-    )
-
-    app.run(
-        host="0.0.0.0",
-        port=port
-    )
+</body>
+</html>
