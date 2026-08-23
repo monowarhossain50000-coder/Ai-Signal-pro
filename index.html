@@ -1,1 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <title>SIGNAL BY MONOWAR</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: #0b1220;
+            color: #ffffff;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: auto;
+            padding: 15px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 18px 10px;
+            background: #111c31;
+            border-radius: 15px;
+            margin-bottom: 15px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .header p {
+            margin: 7px 0 0;
+            color: #aab6cc;
+            font-size: 13px;
+        }
+
+        .card {
+            background: #111c31;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 7px;
+            color: #aab6cc;
+            font-size: 13px;
+        }
+
+        select,
+        button {
+            width: 100%;
+            padding: 13px;
+            border: none;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            font-size: 15px;
+        }
+
+        select {
+            background: #1b2942;
+            color: white;
+        }
+
+        button {
+            background: #2563eb;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .signal-box {
+            text-align: center;
+            padding: 25px 15px;
+            border-radius: 15px;
+            background: #17243b;
+            margin-top: 10px;
+        }
+
+        .signal {
+            font-size: 32px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .call {
+            color: #22c55e;
+        }
+
+        .put {
+            color: #ef4444;
+        }
+
+        .wait {
+            color: #f59e0b;
+        }
+
+        .info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .info-item {
+            background: #1b2942;
+            padding: 12px;
+            border-radius: 10px;
+        }
+
+        .info-title {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 15px;
+            font-weight: bold;
+        }
+
+        .error {
+            color: #ef4444;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        .warning {
+            margin-top: 12px;
+            padding: 12px;
+            background: #3b2d12;
+            color: #fbbf24;
+            border-radius: 10px;
+            font-size: 12px;
+        }
+
+        .success {
+            color: #22c55e;
+        }
+
+        .danger {
+            color: #ef4444;
+        }
+
+        .muted {
+            color: #94a3b8;
+        }
+
+        .footer {
+            text-align: center;
+            color: #64748b;
+            font-size: 11px;
+            padding: 10px;
+        }
+
+        .status {
+            text-align: center;
+            font-size: 12px;
+            margin-top: 5px;
+            color: #94a3b8;
+        }
+
+        @media (max-width: 450px) {
+
+            .signal {
+                font-size: 27px;
+            }
+
+            .info {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <h1>📊 SIGNAL BY MONOWAR</h1>
+        <p>Running Candle Signal System</p>
+        <p>Early Entry • First 30 Seconds</p>
+    </div>
+
+
+    <!-- MARKET SETTINGS -->
+
+    <div class="card">
+
+        <label>Market</label>
+
+        <select id="market" onchange="updatePairs()">
+            <option value="real">REAL MARKET</option>
+            <option value="otc">OTC MARKET</option>
+        </select>
+
+
+        <label>Currency / Asset</label>
+
+        <select id="symbol">
+            {% for pair in real_pairs %}
+            <option class="real-pair" value="{{ pair }}">
+                {{ pair }}
+            </option>
+            {% endfor %}
+        </select>
+
+
+        <label>Timeframe</label>
+
+        <select id="timeframe">
+
+            <option value="1">1 Minute</option>
+            <option value="2">2 Minutes</option>
+            <option value="3">3 Minutes</option>
+            <option value="5">5 Minutes</option>
+            <option value="10">10 Minutes</option>
+            <option value="15">15 Minutes</option>
+            <option value="30">30 Minutes</option>
+            <option value="60">60 Minutes</option>
+            <option value="240">240 Minutes</option>
+
+        </select>
+
+
+        <button onclick="generateSignal()">
+            🔍 GENERATE SIGNAL
+        </button>
+
+        <div class="status" id="status">
+            Ready
+        </div>
+
+    </div>
+
+
+    <!-- SIGNAL -->
+
+    <div class="card">
+
+        <div class="signal-box">
+
+            <div class="muted">
+                SIGNAL FOR
+            </div>
+
+            <div id="signalFor">
+                CURRENT RUNNING CANDLE
+            </div>
+
+            <div id="signal" class="signal wait">
+                NO SIGNAL
+            </div>
+
+            <div id="signalLevel">
+                —
+            </div>
+
+        </div>
+
+
+        <!-- MARKET INFORMATION -->
+
+        <div class="info">
+
+            <div class="info-item">
+
+                <div class="info-title">
+                    PRICE
+                </div>
+
+                <div class="info-value" id="price">
+                    —
+                </div>
+
+            </div>
+
+
+            <div class="info-item">
+
+                <div class="info-title">
+                    CONFIDENCE
+                </div>
+
+                <div class="info-value" id="confidence">
+                    —
+                </div>
+
+            </div>
+
+
+            <div class="info-item">
+
+                <div class="info-title">
+                    RSI 14
+                </div>
+
+                <div class="info-value" id="rsi">
+                    —
+                </div>
+
+            </div>
+
+
+            <div class="info-item">
+
+                <div class="info-title">
+                    TREND
+                </div>
+
+                <div class="info-value" id="trend">
+                    —
+                </div>
+
+            </div>
+
+
+            <div class="info-item">
+
+                <div class="info-title">
+                    EMA 20
+                </div>
+
+                <div class="info-value" id="ema20">
+                    —
+                </div>
+
+            </div>
+
+
+            <div class="info-item">
+
+                <div class="info-title">
+                    EMA 50
+                </div>
+
+                <div class="info-value" id="ema50">
+                    —
+                </div>
+
+            </div>
+
+
+            <div class="info-item">
+
+                <div class="info-title">
+                    EMA 200
+                </div>
+
+                <div class="info-value" id="ema200">
+                    —
+                </div>
+
+            </div>
+
+
+            <div class="info-item">
+
+                <div class="info-title">
+                    CANDLE
+                </div>
+
+                <div class="info-value" id="candle">
+                    —
+                </div>
+
+            </div>
+
+
+            <div class="info-item">
+
+                <div class="info-title">
+                    CANDLE STRENGTH
+                </div>
+
+                <div class="info-value" id="strength">
+                    —
+                </div>
+
+            </div>
+
+
+            <div class="info-item">
+
+                <div class="info-title">
+                    PREVIOUS CANDLE
+                </div>
+
+                <div class="info-value" id="previous">
+                    —
+                </div>
+
+            </div>
+
+
+            <div class="info-item">
+
+                <div class="info-title">
+                    CALL SCORE
+                </div>
+
+                <div class="info-value success" id="callScore">
+                    —
+                </div>
+
+            </div>
+
+
+            <div class="info-item">
+
+                <div class="info-title">
+                    PUT SCORE
+                </div>
+
+                <div class="info-value danger" id="putScore">
+                    —
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div id="warning"></div>
+
+        <div id="error" class="error"></div>
+
+    </div>
+
+
+    <div class="footer">
+        SIGNAL BY MONOWAR
+        <br>
+        Data Source: Twelve Data
+    </div>
+
+</div>
+
+
+<script>
+
+const realPairs = [
+{% for pair in real_pairs %}
+"{{ pair }}",
+{% endfor %}
+];
+
+
+const otcPairs = [
+{% for pair in otc_pairs %}
+"{{ pair }}",
+{% endfor %}
+];
+
+
+// =====================================================
+// UPDATE PAIRS
+// =====================================================
+
+function updatePairs() {
+
+    const market =
+        document.getElementById("market").value;
+
+    const symbol =
+        document.getElementById("symbol");
+
+    symbol.innerHTML = "";
+
+    const pairs =
+        market === "otc"
+        ? otcPairs
+        : realPairs;
+
+
+    pairs.forEach(function(pair) {
+
+        const option =
+            document.createElement("option");
+
+        option.value = pair;
+        option.textContent = pair;
+
+        symbol.appendChild(option);
+
+    });
+
+}
+
+
+// =====================================================
+// GENERATE SIGNAL
+// =====================================================
+
+async function generateSignal() {
+
+    const market =
+        document.getElementById("market").value;
+
+    const symbol =
+        document.getElementById("symbol").value;
+
+    const timeframe =
+        document.getElementById("timeframe").value;
+
+
+    const status =
+        document.getElementById("status");
+
+    const errorBox =
+        document.getElementById("error");
+
+
+    status.textContent =
+        "Loading market data...";
+
+    errorBox.textContent = "";
+
+
+    try {
+
+        const url =
+            `/api/market?market=${encodeURIComponent(market)}&symbol=${encodeURIComponent(symbol)}&timeframe=${encodeURIComponent(timeframe)}`;
+
+
+        const response =
+            await fetch(url);
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.error ||
+                "Signal generation failed."
+            );
+
+        }
+
+
+        // =================================================
+        // SIGNAL
+        // =================================================
+
+        const signal =
+            document.getElementById("signal");
+
+
+        signal.textContent =
+            data.signal || "NO SIGNAL";
+
+
+        signal.className =
+            "signal";
+
+
+        if (
+            data.signal &&
+            data.signal.includes("CALL")
+        ) {
+
+            signal.classList.add(
+                "call"
+            );
+
+        }
+
+        else if (
+            data.signal &&
+            data.signal.includes("PUT")
+        ) {
+
+            signal.classList.add(
+                "put"
+            );
+
+        }
+
+        else {
+
+            signal.classList.add(
+                "wait"
+            );
+
+        }
+
+
+        document.getElementById(
+            "signalFor"
+        ).textContent =
+            data.signal_for ||
+            "CURRENT RUNNING CANDLE";
+
+
+        document.getElementById(
+            "signalLevel"
+        ).textContent =
+            data.signal_level ||
+            "—";
+
+
+        // =================================================
+        // VALUES
+        // =================================================
+
+        document.getElementById(
+            "price"
+        ).textContent =
+            data.price ?? "—";
+
+
+        document.getElementById(
+            "confidence"
+        ).textContent =
+            data.confidence != null
+            ? data.confidence + "%"
+            : "—";
+
+
+        document.getElementById(
+            "rsi"
+        ).textContent =
+            data.rsi14 ?? "—";
+
+
+        document.getElementById(
+            "trend"
+        ).textContent =
+            data.trend ?? "—";
+
+
+        document.getElementById(
+            "ema20"
+        ).textContent =
+            data.ema20 ?? "—";
+
+
+        document.getElementById(
+            "ema50"
+        ).textContent =
+            data.ema50 ?? "—";
+
+
+        document.getElementById(
+            "ema200"
+        ).textContent =
+            data.ema200 ?? "—";
+
+
+        document.getElementById(
+            "candle"
+        ).textContent =
+            data.candle ?? "—";
+
+
+        document.getElementById(
+            "strength"
+        ).textContent =
+            data.candle_strength != null
+            ? data.candle_strength + "%"
+            : "—";
+
+
+        document.getElementById(
+            "previous"
+        ).textContent =
+            data.previous_candle ?? "—";
+
+
+        document.getElementById(
+            "callScore"
+        ).textContent =
+            data.call_score ?? "—";
+
+
+        document.getElementById(
+            "putScore"
+        ).textContent =
+            data.put_score ?? "—";
+
+
+        // =================================================
+        // WARNING
+        // =================================================
+
+        const warning =
+            document.getElementById(
+                "warning"
+            );
+
+
+        if (data.warning) {
+
+            warning.innerHTML =
+                `<div class="warning">
+                    ⚠️ ${data.warning}
+                </div>`;
+
+        }
+
+        else {
+
+            warning.innerHTML = "";
+
+        }
+
+
+        status.textContent =
+            "Signal updated successfully";
+
+
+    }
+
+    catch (error) {
+
+        status.textContent =
+            "Error";
+
+
+        document.getElementById(
+            "signal"
+        ).textContent =
+            "NO SIGNAL";
+
+
+        document.getElementById(
+            "signal"
+        ).className =
+            "signal wait";
+
+
+        errorBox.textContent =
+            error.message;
+
+    }
+
+}
+
+
+// =====================================================
+// INITIAL PAIRS
+// =====================================================
+
+updatePairs();
+
+</script>
+
+</body>
+</html>
