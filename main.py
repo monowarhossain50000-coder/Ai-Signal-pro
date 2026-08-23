@@ -1,18 +1,12 @@
 import os
 import requests
 from datetime import datetime, timezone
-
 from flask import Flask, render_template, jsonify, request
-
 
 app = Flask(__name__)
 
 API_KEY = os.getenv("TWELVEDATA_API_KEY")
 
-
-# =========================================================
-# REAL MARKET PAIRS
-# =========================================================
 
 REAL_PAIRS = [
     "EUR/USD", "GBP/USD", "USD/JPY", "USD/CHF",
@@ -29,10 +23,6 @@ REAL_PAIRS = [
     "USD/ZAR", "USD/TRY"
 ]
 
-
-# =========================================================
-# OTC PAIRS
-# =========================================================
 
 OTC_PAIRS = [
     "EUR/USD OTC", "GBP/USD OTC", "USD/JPY OTC",
@@ -66,10 +56,6 @@ OTC_PAIRS = [
 ]
 
 
-# =========================================================
-# TIMEFRAMES
-# =========================================================
-
 TIMEFRAMES = {
     "1": 1,
     "2": 2,
@@ -83,32 +69,21 @@ TIMEFRAMES = {
 }
 
 
-# =========================================================
-# FOREX MARKET STATUS
-# =========================================================
-
 def forex_weekend_closed():
 
     now = datetime.now(timezone.utc)
 
-    # Saturday
     if now.weekday() == 5:
         return True
 
-    # Sunday before 21:00 UTC
     if now.weekday() == 6 and now.hour < 21:
         return True
 
-    # Friday after 21:00 UTC
     if now.weekday() == 4 and now.hour >= 21:
         return True
 
     return False
 
-
-# =========================================================
-# EMA
-# =========================================================
 
 def calculate_ema(prices, period):
 
@@ -128,10 +103,6 @@ def calculate_ema(prices, period):
     return ema
 
 
-# =========================================================
-# RSI
-# =========================================================
-
 def calculate_rsi(prices, period=14):
 
     if len(prices) <= period:
@@ -144,39 +115,21 @@ def calculate_rsi(prices, period=14):
 
         change = prices[i] - prices[i - 1]
 
-        gains.append(
-            max(change, 0)
-        )
+        gains.append(max(change, 0))
+        losses.append(max(-change, 0))
 
-        losses.append(
-            max(-change, 0)
-        )
-
-    avg_gain = (
-        sum(gains[:period])
-        / period
-    )
-
-    avg_loss = (
-        sum(losses[:period])
-        / period
-    )
+    avg_gain = sum(gains[:period]) / period
+    avg_loss = sum(losses[:period]) / period
 
     for i in range(period, len(gains)):
 
         avg_gain = (
-            (
-                avg_gain
-                * (period - 1)
-            )
+            (avg_gain * (period - 1))
             + gains[i]
         ) / period
 
         avg_loss = (
-            (
-                avg_loss
-                * (period - 1)
-            )
+            (avg_loss * (period - 1))
             + losses[i]
         ) / period
 
@@ -190,22 +143,15 @@ def calculate_rsi(prices, period=14):
     )
 
 
-# =========================================================
-# MARKET DATA
-# =========================================================
-
 def get_market_candles(symbol, minutes):
 
     if minutes == 60:
-
         interval = "1h"
 
     elif minutes == 240:
-
         interval = "4h"
 
     else:
-
         interval = "1min"
 
 
@@ -238,15 +184,9 @@ def get_market_candles(symbol, minutes):
 
 
     raw = list(
-        reversed(
-            data["values"]
-        )
+        reversed(data["values"])
     )
 
-
-    # -----------------------------------------------------
-    # Build custom minute candles
-    # -----------------------------------------------------
 
     if minutes not in [1, 60, 240]:
 
@@ -262,26 +202,17 @@ def get_market_candles(symbol, minutes):
                 i:i + minutes
             ]
 
-
             candles.append({
-
-                "open": float(
-                    group[0]["open"]
-                ),
-
+                "open": float(group[0]["open"]),
                 "high": max(
                     float(x["high"])
                     for x in group
                 ),
-
                 "low": min(
                     float(x["low"])
                     for x in group
                 ),
-
-                "close": float(
-                    group[-1]["close"]
-                )
+                "close": float(group[-1]["close"])
             })
 
     else:
@@ -291,93 +222,47 @@ def get_market_candles(symbol, minutes):
         for item in raw:
 
             candles.append({
-
-                "open": float(
-                    item["open"]
-                ),
-
-                "high": float(
-                    item["high"]
-                ),
-
-                "low": float(
-                    item["low"]
-                ),
-
-                "close": float(
-                    item["close"]
-                )
+                "open": float(item["open"]),
+                "high": float(item["high"]),
+                "low": float(item["low"]),
+                "close": float(item["close"])
             })
 
 
     return candles
 
 
-# =========================================================
-# CANDLE INFORMATION
-# =========================================================
+def candle_info(candle):
 
-def get_candle_info(candle):
-
-    open_price = float(
-        candle["open"]
-    )
-
-    high = float(
-        candle["high"]
-    )
-
-    low = float(
-        candle["low"]
-    )
-
-    close = float(
-        candle["close"]
-    )
-
+    open_price = float(candle["open"])
+    high = float(candle["high"])
+    low = float(candle["low"])
+    close = float(candle["close"])
 
     candle_range = high - low
-
-    body = abs(
-        close - open_price
-    )
-
+    body = abs(close - open_price)
 
     if candle_range > 0:
-
-        body_ratio = (
-            body / candle_range
-        )
-
+        body_ratio = body / candle_range
     else:
-
         body_ratio = 0
 
 
     if close > open_price:
-
         direction = "BULLISH"
 
     elif close < open_price:
-
         direction = "BEARISH"
 
     else:
-
         direction = "DOJI"
 
 
     return {
         "direction": direction,
-        "body": body,
-        "range": candle_range,
         "body_ratio": body_ratio
     }
 
-
-# =========================================================
-# SIGNAL ENGINE
-# =========================================================
 
 def generate_signal(
     candles,
@@ -400,20 +285,13 @@ def generate_signal(
 
 
     current = candles[-1]
-
     previous = candles[-2]
-
-    previous2 = candles[-3]
 
 
     price = float(
         current["close"]
     )
 
-
-    # =====================================================
-    # INDICATORS
-    # =====================================================
 
     ema50 = calculate_ema(
         closes,
@@ -442,34 +320,161 @@ def generate_signal(
         )
 
 
-    # =====================================================
-    # CANDLE ANALYSIS
-    # =====================================================
-
-    current_info = get_candle_info(
+    current_candle = candle_info(
         current
     )
 
-    previous_info = get_candle_info(
+    previous_candle = candle_info(
         previous
     )
 
-    previous2_info = get_candle_info(
-        previous2
+
+    direction = current_candle[
+        "direction"
+    ]
+
+    previous_direction = previous_candle[
+        "direction"
+    ]
+
+
+    # =====================================================
+    # SCORE SYSTEM
+    # =====================================================
+
+    call_score = 0
+    put_score = 0
+
+
+    # EMA50 position
+
+    if price > ema50:
+        call_score += 1
+
+    elif price < ema50:
+        put_score += 1
+
+
+    # EMA50 / EMA200 trend
+
+    if ema50 > ema200:
+        call_score += 1
+
+    elif ema50 < ema200:
+        put_score += 1
+
+
+    # RSI
+
+    if rsi14 > 50.5:
+        call_score += 1
+
+    elif rsi14 < 49.5:
+        put_score += 1
+
+
+    # Current candle
+
+    if direction == "BULLISH":
+        call_score += 1
+
+    elif direction == "BEARISH":
+        put_score += 1
+
+
+    # Previous candle
+
+    if previous_direction == "BULLISH":
+        call_score += 1
+
+    elif previous_direction == "BEARISH":
+        put_score += 1
+
+
+    # =====================================================
+    # CANDLE STRENGTH
+    # =====================================================
+
+    candle_strength = (
+        current_candle["body_ratio"]
+        * 100
     )
 
 
-    current_direction = (
-        current_info["direction"]
+    if (
+        direction == "BULLISH"
+        and candle_strength >= 30
+    ):
+
+        call_score += 1
+
+
+    elif (
+        direction == "BEARISH"
+        and candle_strength >= 30
+    ):
+
+        put_score += 1
+
+
+    # =====================================================
+    # FINAL DECISION
+    # =====================================================
+
+    signal = "NO TRADE"
+
+
+    difference = abs(
+        call_score - put_score
     )
 
-    previous_direction = (
-        previous_info["direction"]
+
+    # CALL
+
+    if (
+        call_score >= 4
+        and call_score > put_score
+        and difference >= 1
+    ):
+
+        signal = "CALL / UP"
+
+
+    # PUT
+
+    elif (
+        put_score >= 4
+        and put_score > call_score
+        and difference >= 1
+    ):
+
+        signal = "PUT / DOWN"
+
+
+    # =====================================================
+    # CONFIDENCE
+    # =====================================================
+
+    highest_score = max(
+        call_score,
+        put_score
     )
 
-    previous2_direction = (
-        previous2_info["direction"]
+
+    confidence = int(
+        highest_score / 6 * 100
     )
+
+
+    confidence = min(
+        confidence,
+        90
+    )
+
+
+    if signal == "NO TRADE":
+
+        confidence = 50
 
 
     # =====================================================
@@ -504,248 +509,6 @@ def generate_signal(
 
 
     # =====================================================
-    # EMA DISTANCE
-    # =====================================================
-
-    if price != 0:
-
-        ema_distance = (
-            abs(price - ema50)
-            / price
-        ) * 100
-
-    else:
-
-        ema_distance = 0
-
-
-    # Avoid extremely tight EMA situations
-
-    ema_ok = (
-        ema_distance >= 0.005
-    )
-
-
-    # =====================================================
-    # CANDLE STRENGTH
-    # =====================================================
-
-    current_strong = (
-        current_info["body_ratio"]
-        >= 0.35
-    )
-
-
-    previous_strong = (
-        previous_info["body_ratio"]
-        >= 0.30
-    )
-
-
-    # =====================================================
-    # SCORE
-    # =====================================================
-
-    call_score = 0
-
-    put_score = 0
-
-
-    # -----------------------------------------------------
-    # TREND
-    # -----------------------------------------------------
-
-    if (
-        price > ema50
-        and ema50 > ema200
-    ):
-
-        call_score += 2
-
-
-    elif (
-        price < ema50
-        and ema50 < ema200
-    ):
-
-        put_score += 2
-
-
-    elif price > ema50:
-
-        call_score += 1
-
-
-    elif price < ema50:
-
-        put_score += 1
-
-
-    # -----------------------------------------------------
-    # RSI
-    # -----------------------------------------------------
-
-    if rsi14 >= 52:
-
-        call_score += 1
-
-    elif rsi14 <= 48:
-
-        put_score += 1
-
-
-    # -----------------------------------------------------
-    # CURRENT CANDLE
-    # -----------------------------------------------------
-
-    if current_direction == "BULLISH":
-
-        call_score += 1
-
-    elif current_direction == "BEARISH":
-
-        put_score += 1
-
-
-    # -----------------------------------------------------
-    # CURRENT CANDLE STRENGTH
-    # -----------------------------------------------------
-
-    if current_strong:
-
-        if current_direction == "BULLISH":
-
-            call_score += 1
-
-        elif current_direction == "BEARISH":
-
-            put_score += 1
-
-
-    # -----------------------------------------------------
-    # PREVIOUS CANDLE
-    # -----------------------------------------------------
-
-    if (
-        previous_direction == "BULLISH"
-        and previous_strong
-    ):
-
-        call_score += 1
-
-    elif (
-        previous_direction == "BEARISH"
-        and previous_strong
-    ):
-
-        put_score += 1
-
-
-    # -----------------------------------------------------
-    # TWO-CANDLE MOMENTUM
-    # -----------------------------------------------------
-
-    if (
-        current_direction == "BULLISH"
-        and previous_direction == "BULLISH"
-        and previous2_direction == "BULLISH"
-    ):
-
-        call_score += 1
-
-
-    elif (
-        current_direction == "BEARISH"
-        and previous_direction == "BEARISH"
-        and previous2_direction == "BEARISH"
-    ):
-
-        put_score += 1
-
-
-    # =====================================================
-    # FINAL SIGNAL
-    # =====================================================
-
-    signal = "WAIT"
-
-
-    # Minimum difference prevents equal signals
-
-    score_difference = abs(
-        call_score - put_score
-    )
-
-
-    # -----------------------------------------------------
-    # CALL
-    # -----------------------------------------------------
-
-    if (
-        call_score >= 4
-        and call_score > put_score
-        and score_difference >= 2
-        and ema_ok
-        and rsi14 >= 52
-        and current_direction == "BULLISH"
-    ):
-
-        signal = "CALL / UP"
-
-
-    # -----------------------------------------------------
-    # PUT
-    # -----------------------------------------------------
-
-    elif (
-        put_score >= 4
-        and put_score > call_score
-        and score_difference >= 2
-        and ema_ok
-        and rsi14 <= 48
-        and current_direction == "BEARISH"
-    ):
-
-        signal = "PUT / DOWN"
-
-
-    # =====================================================
-    # CONFIDENCE
-    # =====================================================
-
-    max_score = 8
-
-    highest_score = max(
-        call_score,
-        put_score
-    )
-
-
-    confidence = int(
-        (
-            highest_score
-            / max_score
-        ) * 100
-    )
-
-
-    if signal == "WAIT":
-
-        confidence = min(
-            confidence,
-            60
-        )
-
-
-    # Never display 100%
-
-    confidence = min(
-        confidence,
-        90
-    )
-
-
-    # =====================================================
     # RESULT
     # =====================================================
 
@@ -771,26 +534,19 @@ def generate_signal(
             round(rsi14, 2),
 
         "candle":
-            current_direction,
+            direction,
 
         "previous_candle":
             previous_direction,
 
-        "trend":
-            trend,
-
         "candle_strength":
             round(
-                current_info["body_ratio"]
-                * 100,
+                candle_strength,
                 1
             ),
 
-        "ema_distance":
-            round(
-                ema_distance,
-                4
-            ),
+        "trend":
+            trend,
 
         "call_score":
             call_score,
@@ -812,10 +568,6 @@ def generate_signal(
     }
 
 
-    # =====================================================
-    # OTC MESSAGE
-    # =====================================================
-
     if market_type == "otc":
 
         result["proxy"] = True
@@ -830,17 +582,13 @@ def generate_signal(
         result["proxy"] = False
 
         result["message"] = (
-            "Signal generated using "
+            "Signal generated from "
             "Twelve Data real-market candles."
         )
 
 
     return result
 
-
-# =========================================================
-# HOME PAGE
-# =========================================================
 
 @app.route("/")
 def home():
@@ -851,10 +599,6 @@ def home():
         otc_pairs=OTC_PAIRS
     )
 
-
-# =========================================================
-# MARKET API
-# =========================================================
 
 @app.route("/api/market")
 def market():
@@ -877,10 +621,6 @@ def market():
     )
 
 
-    # =====================================================
-    # API KEY CHECK
-    # =====================================================
-
     if not API_KEY:
 
         return jsonify({
@@ -895,10 +635,6 @@ def market():
         }), 500
 
 
-    # =====================================================
-    # TIMEFRAME CHECK
-    # =====================================================
-
     if timeframe not in TIMEFRAMES:
 
         return jsonify({
@@ -912,10 +648,6 @@ def market():
                 "Invalid timeframe."
         }), 400
 
-
-    # =====================================================
-    # REAL MARKET
-    # =====================================================
 
     if market_type == "real":
 
@@ -956,10 +688,6 @@ def market():
         data_symbol = symbol
 
 
-    # =====================================================
-    # OTC MARKET
-    # =====================================================
-
     elif market_type == "otc":
 
         if symbol not in OTC_PAIRS:
@@ -995,10 +723,6 @@ def market():
                 "Invalid market type."
         }), 400
 
-
-    # =====================================================
-    # GET CANDLES
-    # =====================================================
 
     try:
 
@@ -1044,10 +768,6 @@ def market():
         }), 400
 
 
-# =========================================================
-# START SERVER
-# =========================================================
-
 if __name__ == "__main__":
 
     port = int(
@@ -1056,7 +776,6 @@ if __name__ == "__main__":
             "5000"
         )
     )
-
 
     app.run(
         host="0.0.0.0",
