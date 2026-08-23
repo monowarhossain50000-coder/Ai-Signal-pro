@@ -7,6 +7,7 @@
     <title>Signal By Monowar</title>
 
     <style>
+
         * {
             box-sizing: border-box;
         }
@@ -26,7 +27,25 @@
 
         h1 {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
+        }
+
+        .data-badge {
+            text-align: center;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .live {
+            background: #063d25;
+            color: #39ff9b;
+        }
+
+        .proxy {
+            background: #4a3500;
+            color: #ffd45c;
         }
 
         .card {
@@ -101,6 +120,13 @@
             margin-bottom: 15px;
         }
 
+        .warning {
+            color: #ffd45c;
+            font-size: 13px;
+            text-align: center;
+            margin-top: 10px;
+        }
+
         .error {
             color: #ff6b6b;
         }
@@ -111,6 +137,7 @@
             font-size: 13px;
             margin-top: 15px;
         }
+
     </style>
 </head>
 
@@ -120,40 +147,87 @@
 
     <h1>📊 SIGNAL BY MONOWAR</h1>
 
+    <div id="dataBadge" class="data-badge live">
+        🟢 LIVE MARKET DATA
+    </div>
+
     <div class="card">
 
-        <label for="market">Market</label>
+        <label for="market">
+            Market
+        </label>
 
         <select id="market" onchange="updatePairs()">
-            <option value="real">REAL MARKET</option>
-            <option value="otc">OTC MARKET</option>
+
+            <option value="real">
+                REAL MARKET
+            </option>
+
+            <option value="otc">
+                OTC MARKET
+            </option>
+
         </select>
 
 
-        <label for="symbol">Currency / Asset</label>
+        <label for="symbol">
+            Currency / Asset
+        </label>
 
         <select id="symbol">
+
             {% for pair in real_pairs %}
-            <option value="{{ pair }}" class="real-pair">
+
+            <option value="{{ pair }}">
                 {{ pair }}
             </option>
+
             {% endfor %}
+
         </select>
 
 
-        <label for="timeframe">Timeframe</label>
+        <label for="timeframe">
+            Timeframe
+        </label>
 
         <select id="timeframe">
 
-            <option value="1">1 Minute</option>
-            <option value="2">2 Minutes</option>
-            <option value="3">3 Minutes</option>
-            <option value="5">5 Minutes</option>
-            <option value="10">10 Minutes</option>
-            <option value="15">15 Minutes</option>
-            <option value="30">30 Minutes</option>
-            <option value="60">60 Minutes</option>
-            <option value="240">240 Minutes</option>
+            <option value="1">
+                1 Minute
+            </option>
+
+            <option value="2">
+                2 Minutes
+            </option>
+
+            <option value="3">
+                3 Minutes
+            </option>
+
+            <option value="5">
+                5 Minutes
+            </option>
+
+            <option value="10">
+                10 Minutes
+            </option>
+
+            <option value="15">
+                15 Minutes
+            </option>
+
+            <option value="30">
+                30 Minutes
+            </option>
+
+            <option value="60">
+                60 Minutes
+            </option>
+
+            <option value="240">
+                240 Minutes
+            </option>
 
         </select>
 
@@ -176,6 +250,8 @@
             WAIT
         </div>
 
+        <div id="warning" class="warning"></div>
+
     </div>
 
 
@@ -183,49 +259,67 @@
 
         <div class="row">
             <span>Symbol</span>
-            <span class="value" id="resultSymbol">-</span>
+            <span class="value" id="resultSymbol">
+                -
+            </span>
         </div>
 
         <div class="row">
             <span>Timeframe</span>
-            <span class="value" id="resultTimeframe">-</span>
+            <span class="value" id="resultTimeframe">
+                -
+            </span>
         </div>
 
         <div class="row">
             <span>Price</span>
-            <span class="value" id="price">-</span>
+            <span class="value" id="price">
+                -
+            </span>
         </div>
 
         <div class="row">
             <span>EMA 50</span>
-            <span class="value" id="ema50">-</span>
+            <span class="value" id="ema50">
+                -
+            </span>
         </div>
 
         <div class="row">
             <span>RSI 14</span>
-            <span class="value" id="rsi14">-</span>
+            <span class="value" id="rsi14">
+                -
+            </span>
         </div>
 
         <div class="row">
             <span>Candle</span>
-            <span class="value" id="candle">-</span>
+            <span class="value" id="candle">
+                -
+            </span>
         </div>
 
         <div class="row">
             <span>Trend</span>
-            <span class="value" id="trend">-</span>
+            <span class="value" id="trend">
+                -
+            </span>
         </div>
 
         <div class="row">
             <span>Confidence</span>
-            <span class="value" id="confidence">-</span>
+            <span class="value" id="confidence">
+                -
+            </span>
         </div>
 
     </div>
 
 
     <div class="small">
-        Signal By Monowar • EMA 50 + RSI 14 + Candle
+        Signal By Monowar
+        <br>
+        EMA 50 + RSI 14 + Candle
     </div>
 
 </div>
@@ -234,15 +328,24 @@
 <script>
 
 const realPairs = [
+
     {% for pair in real_pairs %}
-        "{{ pair }}",
+
+    "{{ pair }}",
+
     {% endfor %}
+
 ];
 
+
 const otcPairs = [
+
     {% for pair in otc_pairs %}
-        "{{ pair }}",
+
+    "{{ pair }}",
+
     {% endfor %}
+
 ];
 
 
@@ -251,18 +354,43 @@ function updatePairs() {
     const market =
         document.getElementById("market").value;
 
+
     const symbol =
         document.getElementById("symbol");
+
+
+    const badge =
+        document.getElementById("dataBadge");
+
 
     symbol.innerHTML = "";
 
 
-    let pairs = [];
+    let pairs;
+
 
     if (market === "otc") {
+
         pairs = otcPairs;
-    } else {
+
+        badge.className =
+            "data-badge proxy";
+
+        badge.textContent =
+            "🟡 OTC PROXY DATA";
+
+    }
+
+    else {
+
         pairs = realPairs;
+
+        badge.className =
+            "data-badge live";
+
+        badge.textContent =
+            "🟢 LIVE MARKET DATA";
+
     }
 
 
@@ -272,6 +400,7 @@ function updatePairs() {
             document.createElement("option");
 
         option.value = pair;
+
         option.textContent = pair;
 
         symbol.appendChild(option);
@@ -279,10 +408,16 @@ function updatePairs() {
     });
 
 
-    document.getElementById("signal").textContent = "WAIT";
+    document.getElementById("signal")
+        .textContent = "WAIT";
 
-    document.getElementById("status").textContent =
-        "Ready";
+
+    document.getElementById("status")
+        .textContent = "Ready";
+
+
+    document.getElementById("warning")
+        .textContent = "";
 
 }
 
@@ -292,8 +427,10 @@ async function generateSignal() {
     const market =
         document.getElementById("market").value;
 
+
     const symbol =
         document.getElementById("symbol").value;
+
 
     const timeframe =
         document.getElementById("timeframe").value;
@@ -302,17 +439,28 @@ async function generateSignal() {
     const status =
         document.getElementById("status");
 
+
     const signal =
         document.getElementById("signal");
 
 
+    const warning =
+        document.getElementById("warning");
+
+
     status.classList.remove("error");
+
 
     status.textContent =
         "Loading market data...";
 
+
     signal.textContent =
         "LOADING...";
+
+
+    warning.textContent =
+        "";
 
 
     try {
@@ -332,49 +480,58 @@ async function generateSignal() {
         if (!response.ok) {
 
             throw new Error(
-                data.error || "Server error"
+                data.error ||
+                "Server error"
             );
 
         }
 
 
-        document.getElementById("resultSymbol")
-            .textContent =
+        document.getElementById(
+            "resultSymbol"
+        ).textContent =
             data.symbol || symbol;
 
 
-        document.getElementById("resultTimeframe")
-            .textContent =
+        document.getElementById(
+            "resultTimeframe"
+        ).textContent =
             data.timeframe || "-";
 
 
-        document.getElementById("price")
-            .textContent =
+        document.getElementById(
+            "price"
+        ).textContent =
             data.price ?? "-";
 
 
-        document.getElementById("ema50")
-            .textContent =
+        document.getElementById(
+            "ema50"
+        ).textContent =
             data.ema50 ?? "-";
 
 
-        document.getElementById("rsi14")
-            .textContent =
+        document.getElementById(
+            "rsi14"
+        ).textContent =
             data.rsi14 ?? "-";
 
 
-        document.getElementById("candle")
-            .textContent =
+        document.getElementById(
+            "candle"
+        ).textContent =
             data.candle || "-";
 
 
-        document.getElementById("trend")
-            .textContent =
+        document.getElementById(
+            "trend"
+        ).textContent =
             data.trend || "-";
 
 
-        document.getElementById("confidence")
-            .textContent =
+        document.getElementById(
+            "confidence"
+        ).textContent =
             data.confidence !== undefined
                 ? data.confidence + "%"
                 : "-";
@@ -391,7 +548,9 @@ async function generateSignal() {
 
         }
 
-        else if (data.signal === "PUT / DOWN") {
+        else if (
+            data.signal === "PUT / DOWN"
+        ) {
 
             signal.textContent =
                 "🔴 PUT / DOWN";
@@ -399,11 +558,28 @@ async function generateSignal() {
         }
 
         else if (
-            data.signal === "OTC DATA UNAVAILABLE"
+            data.signal === "MARKET CLOSED"
         ) {
 
             signal.textContent =
-                "⚠️ OTC DATA UNAVAILABLE";
+                "🔒 MARKET CLOSED";
+
+        }
+
+        else {
+
+            signal.textContent =
+                data.signal || "WAIT";
+
+        }
+
+
+        if (
+            data.otc_proxy === true
+        ) {
+
+            warning.textContent =
+                "⚠️ OTC signal uses proxy market data, not direct Quotex OTC candles.";
 
         }
 
@@ -420,15 +596,18 @@ async function generateSignal() {
         signal.textContent =
             "NO SIGNAL";
 
+
         status.textContent =
             error.message;
 
-        status.classList.add("error");
+
+        status.classList.add(
+            "error"
+        );
 
     }
 
 }
-
 
 </script>
 
