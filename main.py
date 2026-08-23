@@ -1,12 +1,18 @@
 import os
 import requests
 from datetime import datetime, timezone
+
 from flask import Flask, render_template, jsonify, request
+
 
 app = Flask(__name__)
 
 API_KEY = os.getenv("TWELVEDATA_API_KEY")
 
+
+# =========================================================
+# PAIRS
+# =========================================================
 
 REAL_PAIRS = [
     "EUR/USD", "GBP/USD", "USD/JPY", "USD/CHF",
@@ -69,6 +75,10 @@ TIMEFRAMES = {
 }
 
 
+# =========================================================
+# MARKET STATUS
+# =========================================================
+
 def forex_weekend_closed():
 
     now = datetime.now(timezone.utc)
@@ -84,6 +94,10 @@ def forex_weekend_closed():
 
     return False
 
+
+# =========================================================
+# EMA
+# =========================================================
 
 def calculate_ema(prices, period):
 
@@ -103,6 +117,10 @@ def calculate_ema(prices, period):
     return ema
 
 
+# =========================================================
+# RSI
+# =========================================================
+
 def calculate_rsi(prices, period=14):
 
     if len(prices) <= period:
@@ -113,28 +131,56 @@ def calculate_rsi(prices, period=14):
 
     for i in range(1, len(prices)):
 
-        change = prices[i] - prices[i - 1]
+        change = (
+            prices[i] - prices[i - 1]
+        )
 
-        gains.append(max(change, 0))
-        losses.append(max(-change, 0))
+        gains.append(
+            max(change, 0)
+        )
 
-    avg_gain = sum(gains[:period]) / period
-    avg_loss = sum(losses[:period]) / period
+        losses.append(
+            max(-change, 0)
+        )
 
-    for i in range(period, len(gains)):
+
+    avg_gain = (
+        sum(gains[:period])
+        / period
+    )
+
+    avg_loss = (
+        sum(losses[:period])
+        / period
+    )
+
+
+    for i in range(
+        period,
+        len(gains)
+    ):
 
         avg_gain = (
-            (avg_gain * (period - 1))
+            (
+                avg_gain
+                * (period - 1)
+            )
             + gains[i]
         ) / period
 
+
         avg_loss = (
-            (avg_loss * (period - 1))
+            (
+                avg_loss
+                * (period - 1)
+            )
             + losses[i]
         ) / period
 
+
     if avg_loss == 0:
         return 100
+
 
     rs = avg_gain / avg_loss
 
@@ -143,15 +189,25 @@ def calculate_rsi(prices, period=14):
     )
 
 
-def get_market_candles(symbol, minutes):
+# =========================================================
+# MARKET DATA
+# =========================================================
+
+def get_market_candles(
+    symbol,
+    minutes
+):
 
     if minutes == 60:
+
         interval = "1h"
 
     elif minutes == 240:
+
         interval = "4h"
 
     else:
+
         interval = "1min"
 
 
@@ -184,13 +240,47 @@ def get_market_candles(symbol, minutes):
 
 
     raw = list(
-        reversed(data["values"])
+        reversed(
+            data["values"]
+        )
     )
 
 
-    if minutes not in [1, 60, 240]:
+    candles = []
 
-        candles = []
+
+    # =====================================================
+    # NORMAL TIMEFRAMES
+    # =====================================================
+
+    if minutes in [1, 60, 240]:
+
+        for item in raw:
+
+            candles.append({
+
+                "datetime":
+                    item.get("datetime"),
+
+                "open":
+                    float(item["open"]),
+
+                "high":
+                    float(item["high"]),
+
+                "low":
+                    float(item["low"]),
+
+                "close":
+                    float(item["close"])
+            })
+
+
+    # =====================================================
+    # CUSTOM TIMEFRAMES
+    # =====================================================
+
+    else:
 
         for i in range(
             0,
@@ -202,59 +292,112 @@ def get_market_candles(symbol, minutes):
                 i:i + minutes
             ]
 
-            candles.append({
-                "open": float(group[0]["open"]),
-                "high": max(
-                    float(x["high"])
-                    for x in group
-                ),
-                "low": min(
-                    float(x["low"])
-                    for x in group
-                ),
-                "close": float(group[-1]["close"])
-            })
-
-    else:
-
-        candles = []
-
-        for item in raw:
 
             candles.append({
-                "open": float(item["open"]),
-                "high": float(item["high"]),
-                "low": float(item["low"]),
-                "close": float(item["close"])
+
+                "datetime":
+                    group[0].get("datetime"),
+
+                "open":
+                    float(group[0]["open"]),
+
+                "high":
+                    max(
+                        float(x["high"])
+                        for x in group
+                    ),
+
+                "low":
+                    min(
+                        float(x["low"])
+                        for x in group
+                    ),
+
+                "close":
+                    float(group[-1]["close"])
             })
 
 
     return candles
 
 
+# =========================================================
+# REMOVE RUNNING CANDLE
+# =========================================================
+
+def get_completed_candles(
+    candles,
+    minutes
+):
+
+    if len(candles) < 5:
+
+        return candles
+
+
+    # Twelve Data normally returns the latest
+    # candle first in raw response.
+    #
+    # After reversing, candles are oldest -> newest.
+    #
+    # We deliberately remove the newest candle
+    # so indicator calculation uses only
+    # completed historical candles.
+
+    return candles[:-1]
+
+
+# =========================================================
+# CANDLE INFORMATION
+# =========================================================
+
 def candle_info(candle):
 
-    open_price = float(candle["open"])
-    high = float(candle["high"])
-    low = float(candle["low"])
-    close = float(candle["close"])
+    open_price = float(
+        candle["open"]
+    )
+
+    high = float(
+        candle["high"]
+    )
+
+    low = float(
+        candle["low"]
+    )
+
+    close = float(
+        candle["close"]
+    )
+
 
     candle_range = high - low
-    body = abs(close - open_price)
+
+    body = abs(
+        close - open_price
+    )
+
 
     if candle_range > 0:
-        body_ratio = body / candle_range
+
+        body_ratio = (
+            body / candle_range
+        )
+
     else:
+
         body_ratio = 0
 
 
     if close > open_price:
+
         direction = "BULLISH"
 
     elif close < open_price:
+
         direction = "BEARISH"
 
     else:
+
         direction = "DOJI"
 
 
@@ -263,6 +406,14 @@ def candle_info(candle):
         "body_ratio": body_ratio
     }
 
+
+# =========================================================
+# SIGNAL
+#
+# IMPORTANT:
+# Signal is calculated from the LAST COMPLETED candle.
+# The signal is intended for the NEXT candle.
+# =========================================================
 
 def generate_signal(
     candles,
@@ -274,24 +425,50 @@ def generate_signal(
     if len(candles) < 220:
 
         raise Exception(
-            "Not enough candle data."
+            "Not enough completed candle data."
+        )
+
+
+    # -----------------------------------------------------
+    # ONLY COMPLETED CANDLES
+    # -----------------------------------------------------
+
+    completed = get_completed_candles(
+        candles,
+        TIMEFRAMES[timeframe]
+    )
+
+
+    if len(completed) < 220:
+
+        raise Exception(
+            "Not enough completed candles."
         )
 
 
     closes = [
         float(c["close"])
-        for c in candles
+        for c in completed
     ]
 
 
-    current = candles[-1]
-    previous = candles[-2]
+    # Last completed candle
+
+    last = completed[-1]
+
+    previous = completed[-2]
+
+    previous2 = completed[-3]
 
 
     price = float(
-        current["close"]
+        last["close"]
     )
 
+
+    # =====================================================
+    # INDICATORS
+    # =====================================================
 
     ema50 = calculate_ema(
         closes,
@@ -320,132 +497,177 @@ def generate_signal(
         )
 
 
-    current_candle = candle_info(
-        current
+    # =====================================================
+    # CANDLES
+    # =====================================================
+
+    current_info = candle_info(
+        last
     )
 
-    previous_candle = candle_info(
+    previous_info = candle_info(
         previous
     )
 
+    previous2_info = candle_info(
+        previous2
+    )
 
-    direction = current_candle[
-        "direction"
-    ]
 
-    previous_direction = previous_candle[
-        "direction"
-    ]
+    current_direction = (
+        current_info["direction"]
+    )
+
+    previous_direction = (
+        previous_info["direction"]
+    )
+
+    previous2_direction = (
+        previous2_info["direction"]
+    )
 
 
     # =====================================================
-    # SCORE SYSTEM
+    # SCORE
     # =====================================================
 
     call_score = 0
     put_score = 0
 
 
-    # EMA50 position
+    # -----------------------------------------------------
+    # PRICE VS EMA50
+    # -----------------------------------------------------
 
     if price > ema50:
+
         call_score += 1
 
     elif price < ema50:
+
         put_score += 1
 
 
-    # EMA50 / EMA200 trend
+    # -----------------------------------------------------
+    # EMA50 VS EMA200
+    # -----------------------------------------------------
 
     if ema50 > ema200:
+
         call_score += 1
 
     elif ema50 < ema200:
+
         put_score += 1
 
 
+    # -----------------------------------------------------
     # RSI
+    # -----------------------------------------------------
 
-    if rsi14 > 50.5:
+    if rsi14 >= 50.5:
+
         call_score += 1
 
-    elif rsi14 < 49.5:
+    elif rsi14 <= 49.5:
+
         put_score += 1
 
 
-    # Current candle
+    # -----------------------------------------------------
+    # LAST COMPLETED CANDLE
+    # -----------------------------------------------------
 
-    if direction == "BULLISH":
+    if current_direction == "BULLISH":
+
         call_score += 1
 
-    elif direction == "BEARISH":
+    elif current_direction == "BEARISH":
+
         put_score += 1
 
 
-    # Previous candle
+    # -----------------------------------------------------
+    # PREVIOUS CANDLE
+    # -----------------------------------------------------
 
     if previous_direction == "BULLISH":
+
         call_score += 1
 
     elif previous_direction == "BEARISH":
+
         put_score += 1
 
 
-    # =====================================================
-    # CANDLE STRENGTH
-    # =====================================================
+    # -----------------------------------------------------
+    # MOMENTUM
+    # -----------------------------------------------------
 
-    candle_strength = (
-        current_candle["body_ratio"]
+    if (
+        current_direction == "BULLISH"
+        and previous_direction == "BULLISH"
+        and previous2_direction == "BULLISH"
+    ):
+
+        call_score += 1
+
+
+    elif (
+        current_direction == "BEARISH"
+        and previous_direction == "BEARISH"
+        and previous2_direction == "BEARISH"
+    ):
+
+        put_score += 1
+
+
+    # -----------------------------------------------------
+    # CANDLE BODY
+    # -----------------------------------------------------
+
+    body_strength = (
+        current_info["body_ratio"]
         * 100
     )
 
 
     if (
-        direction == "BULLISH"
-        and candle_strength >= 30
+        body_strength >= 25
+        and current_direction == "BULLISH"
     ):
 
         call_score += 1
 
 
     elif (
-        direction == "BEARISH"
-        and candle_strength >= 30
+        body_strength >= 25
+        and current_direction == "BEARISH"
     ):
 
         put_score += 1
 
 
     # =====================================================
-    # FINAL DECISION
+    # FINAL SIGNAL
     # =====================================================
 
     signal = "NO TRADE"
 
 
-    difference = abs(
-        call_score - put_score
-    )
-
-
-    # CALL
+    # Minimum score
 
     if (
         call_score >= 4
         and call_score > put_score
-        and difference >= 1
     ):
 
         signal = "CALL / UP"
 
 
-    # PUT
-
     elif (
         put_score >= 4
         and put_score > call_score
-        and difference >= 1
     ):
 
         signal = "PUT / DOWN"
@@ -462,7 +684,9 @@ def generate_signal(
 
 
     confidence = int(
-        highest_score / 6 * 100
+        (
+            highest_score / 7
+        ) * 100
     )
 
 
@@ -516,10 +740,17 @@ def generate_signal(
 
         "market_open": True,
 
-        "symbol": symbol,
+        "signal_for":
+            "NEXT CANDLE",
+
+        "symbol":
+            symbol,
 
         "timeframe":
             f"{TIMEFRAMES[timeframe]} Minute",
+
+        "completed_candle":
+            last.get("datetime"),
 
         "price":
             round(price, 5),
@@ -534,14 +765,14 @@ def generate_signal(
             round(rsi14, 2),
 
         "candle":
-            direction,
+            current_direction,
 
         "previous_candle":
             previous_direction,
 
         "candle_strength":
             round(
-                candle_strength,
+                body_strength,
                 1
             ),
 
@@ -564,31 +795,37 @@ def generate_signal(
             "Twelve Data",
 
         "market_type":
-            market_type
+            market_type,
+
+        "proxy":
+            market_type == "otc"
     }
 
 
     if market_type == "otc":
 
-        result["proxy"] = True
-
         result["message"] = (
-            "OTC uses proxy real-market data. "
-            "It is not direct Quotex OTC candle data."
+            "Signal is calculated from the "
+            "last completed proxy candle and "
+            "is intended for the next candle. "
+            "This is not direct Quotex OTC data."
         )
 
     else:
 
-        result["proxy"] = False
-
         result["message"] = (
-            "Signal generated from "
-            "Twelve Data real-market candles."
+            "Signal is calculated from the "
+            "last completed market candle and "
+            "is intended for the next candle."
         )
 
 
     return result
 
+
+# =========================================================
+# HOME
+# =========================================================
 
 @app.route("/")
 def home():
@@ -599,6 +836,10 @@ def home():
         otc_pairs=OTC_PAIRS
     )
 
+
+# =========================================================
+# API
+# =========================================================
 
 @app.route("/api/market")
 def market():
@@ -625,7 +866,8 @@ def market():
 
         return jsonify({
 
-            "market_open": False,
+            "market_open":
+                False,
 
             "signal":
                 "NO SIGNAL",
@@ -639,7 +881,8 @@ def market():
 
         return jsonify({
 
-            "market_open": False,
+            "market_open":
+                False,
 
             "signal":
                 "NO SIGNAL",
@@ -649,13 +892,18 @@ def market():
         }), 400
 
 
+    # =====================================================
+    # REAL
+    # =====================================================
+
     if market_type == "real":
 
         if symbol not in REAL_PAIRS:
 
             return jsonify({
 
-                "market_open": False,
+                "market_open":
+                    False,
 
                 "signal":
                     "NO SIGNAL",
@@ -669,7 +917,8 @@ def market():
 
             return jsonify({
 
-                "market_open": False,
+                "market_open":
+                    False,
 
                 "signal":
                     "MARKET CLOSED",
@@ -688,13 +937,18 @@ def market():
         data_symbol = symbol
 
 
+    # =====================================================
+    # OTC
+    # =====================================================
+
     elif market_type == "otc":
 
         if symbol not in OTC_PAIRS:
 
             return jsonify({
 
-                "market_open": False,
+                "market_open":
+                    False,
 
                 "signal":
                     "NO SIGNAL",
@@ -714,7 +968,8 @@ def market():
 
         return jsonify({
 
-            "market_open": False,
+            "market_open":
+                False,
 
             "signal":
                 "NO SIGNAL",
@@ -723,6 +978,10 @@ def market():
                 "Invalid market type."
         }), 400
 
+
+    # =====================================================
+    # GENERATE
+    # =====================================================
 
     try:
 
@@ -752,10 +1011,14 @@ def market():
 
         return jsonify({
 
-            "market_open": True,
+            "market_open":
+                True,
 
             "signal":
                 "NO SIGNAL",
+
+            "signal_for":
+                "NEXT CANDLE",
 
             "symbol":
                 symbol,
@@ -768,6 +1031,10 @@ def market():
         }), 400
 
 
+# =========================================================
+# RUN
+# =========================================================
+
 if __name__ == "__main__":
 
     port = int(
@@ -776,6 +1043,7 @@ if __name__ == "__main__":
             "5000"
         )
     )
+
 
     app.run(
         host="0.0.0.0",
