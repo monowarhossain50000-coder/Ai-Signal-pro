@@ -111,7 +111,7 @@ def clean_symbol(symbol):
 
     symbol = str(symbol).strip()
 
-    if symbol.endswith(" OTC"):
+    if symbol.upper().endswith(" OTC"):
         symbol = symbol[:-4].strip()
 
     return symbol
@@ -187,7 +187,10 @@ def is_recent_market_data(candle, timeframe):
 
     allowed_delay = max(
         180,
-        TIMEFRAMES.get(timeframe, 1) * 60 * 2
+        TIMEFRAMES.get(
+            str(timeframe),
+            1
+        ) * 60 * 2
     )
 
     if age_seconds < -60:
@@ -238,8 +241,13 @@ def calculate_rsi(prices, period=14):
             prices[i] - prices[i - 1]
         )
 
-        gains.append(max(change, 0))
-        losses.append(max(-change, 0))
+        gains.append(
+            max(change, 0)
+        )
+
+        losses.append(
+            max(-change, 0)
+        )
 
     avg_gain = (
         sum(gains[:period]) / period
@@ -343,10 +351,21 @@ def calculate_support_resistance(
 
 def candle_info(candle):
 
-    o = safe_float(candle.get("open"))
-    h = safe_float(candle.get("high"))
-    l = safe_float(candle.get("low"))
-    c = safe_float(candle.get("close"))
+    o = safe_float(
+        candle.get("open")
+    )
+
+    h = safe_float(
+        candle.get("high")
+    )
+
+    l = safe_float(
+        candle.get("low")
+    )
+
+    c = safe_float(
+        candle.get("close")
+    )
 
     candle_range = h - l
 
@@ -354,7 +373,9 @@ def candle_info(candle):
 
     if candle_range > 0:
 
-        body_ratio = body / candle_range
+        body_ratio = (
+            body / candle_range
+        )
 
         close_position = (
             (c - l) / candle_range
@@ -405,7 +426,9 @@ def get_market_candles(symbol, minutes):
 
     with cache_lock:
 
-        cached = market_cache.get(cache_key)
+        cached = market_cache.get(
+            cache_key
+        )
 
         if cached:
 
@@ -430,7 +453,9 @@ def get_market_candles(symbol, minutes):
 
         if elapsed < API_MIN_GAP:
 
-            cached = market_cache.get(cache_key)
+            cached = market_cache.get(
+                cache_key
+            )
 
             if cached:
                 return cached["data"]
@@ -439,7 +464,9 @@ def get_market_candles(symbol, minutes):
                 API_MIN_GAP - elapsed
             )
 
-            time.sleep(wait_time)
+            time.sleep(
+                wait_time
+            )
 
         last_api_request = time.time()
 
@@ -448,12 +475,15 @@ def get_market_candles(symbol, minutes):
     # -----------------------------------------------------
 
     if minutes == 60:
+
         interval = "1h"
 
     elif minutes == 240:
+
         interval = "4h"
 
     else:
+
         interval = "1min"
 
     # -----------------------------------------------------
@@ -489,7 +519,9 @@ def get_market_candles(symbol, minutes):
 
     if response.status_code == 429:
 
-        cached = market_cache.get(cache_key)
+        cached = market_cache.get(
+            cache_key
+        )
 
         if cached:
             return cached["data"]
@@ -540,7 +572,9 @@ def get_market_candles(symbol, minutes):
         for item in raw:
 
             candles.append({
-                "datetime": item.get("datetime"),
+                "datetime": item.get(
+                    "datetime"
+                ),
 
                 "open": safe_float(
                     item.get("open")
@@ -732,6 +766,7 @@ def analyze_market(
         if price > ema20:
 
             bullish_score += 15
+
             reasons.append(
                 "Price above EMA20"
             )
@@ -739,6 +774,7 @@ def analyze_market(
         elif price < ema20:
 
             bearish_score += 15
+
             reasons.append(
                 "Price below EMA20"
             )
@@ -749,6 +785,7 @@ def analyze_market(
         if price > ema50:
 
             bullish_score += 15
+
             reasons.append(
                 "Price above EMA50"
             )
@@ -756,6 +793,7 @@ def analyze_market(
         elif price < ema50:
 
             bearish_score += 15
+
             reasons.append(
                 "Price below EMA50"
             )
@@ -766,6 +804,7 @@ def analyze_market(
         if price > ema200:
 
             bullish_score += 15
+
             reasons.append(
                 "Price above EMA200"
             )
@@ -773,6 +812,7 @@ def analyze_market(
         elif price < ema200:
 
             bearish_score += 15
+
             reasons.append(
                 "Price below EMA200"
             )
@@ -786,6 +826,7 @@ def analyze_market(
         if ema20 > ema50:
 
             bullish_score += 10
+
             reasons.append(
                 "EMA20 above EMA50"
             )
@@ -793,6 +834,7 @@ def analyze_market(
         elif ema20 < ema50:
 
             bearish_score += 10
+
             reasons.append(
                 "EMA20 below EMA50"
             )
@@ -803,6 +845,7 @@ def analyze_market(
         if rsi >= 55:
 
             bullish_score += 15
+
             reasons.append(
                 "RSI bullish"
             )
@@ -810,6 +853,7 @@ def analyze_market(
         elif rsi <= 45:
 
             bearish_score += 15
+
             reasons.append(
                 "RSI bearish"
             )
@@ -820,6 +864,7 @@ def analyze_market(
         if price > bollinger["middle"]:
 
             bullish_score += 10
+
             reasons.append(
                 "Price above Bollinger middle"
             )
@@ -827,6 +872,7 @@ def analyze_market(
         elif price < bollinger["middle"]:
 
             bearish_score += 10
+
             reasons.append(
                 "Price below Bollinger middle"
             )
@@ -939,3 +985,378 @@ def analyze_market(
     if (
         ema20 is not None
         and ema50 is not None
+        and ema200 is not None
+    ):
+
+        if (
+            ema20 > ema50
+            and ema50 > ema200
+        ):
+
+            trend = "STRONG BULLISH"
+
+        elif (
+            ema20 < ema50
+            and ema50 < ema200
+        ):
+
+            trend = "STRONG BEARISH"
+
+        elif ema20 > ema50:
+
+            trend = "BULLISH"
+
+        elif ema20 < ema50:
+
+            trend = "BEARISH"
+
+        else:
+
+            trend = "SIDEWAYS"
+
+    elif (
+        ema20 is not None
+        and ema50 is not None
+    ):
+
+        if ema20 > ema50:
+
+            trend = "BULLISH"
+
+        elif ema20 < ema50:
+
+            trend = "BEARISH"
+
+        else:
+
+            trend = "SIDEWAYS"
+
+    else:
+
+        trend = "UNKNOWN"
+
+    # -----------------------------------------------------
+    # MARKET STATUS
+    # -----------------------------------------------------
+
+    otc = is_otc_symbol(symbol)
+
+    if otc:
+
+        market_status = (
+            "OTC / Proxy Market Data"
+        )
+
+    else:
+
+        if forex_weekend_closed():
+
+            market_status = (
+                "FOREX MARKET CLOSED"
+            )
+
+        else:
+
+            market_status = (
+                "LIVE MARKET"
+            )
+
+    # -----------------------------------------------------
+    # CANDLE STATUS
+    # -----------------------------------------------------
+
+    recent_ok, recent_message = (
+        is_recent_market_data(
+            current,
+            str(timeframe)
+        )
+    )
+
+    if not recent_ok and not otc:
+
+        market_status = (
+            "DATA DELAYED"
+        )
+
+    # -----------------------------------------------------
+    # RESULT
+    # -----------------------------------------------------
+
+    result = {
+
+        "success": True,
+
+        "symbol": symbol,
+
+        "clean_symbol": clean,
+
+        "timeframe": str(timeframe),
+
+        "minutes": minutes,
+
+        "direction": direction,
+
+        "signal": direction,
+
+        "confidence": confidence,
+
+        "price": price,
+
+        "trend": trend,
+
+        "market_status": market_status,
+
+        "is_otc": otc,
+
+        "data_recent": recent_ok,
+
+        "data_message": recent_message,
+
+        "rsi": round(
+            rsi,
+            2
+        ) if rsi is not None else None,
+
+        "ema20": round(
+            ema20,
+            8
+        ) if ema20 is not None else None,
+
+        "ema50": round(
+            ema50,
+            8
+        ) if ema50 is not None else None,
+
+        "ema200": round(
+            ema200,
+            8
+        ) if ema200 is not None else None,
+
+        "bollinger": {
+            "upper": round(
+                bollinger["upper"],
+                8
+            ),
+            "middle": round(
+                bollinger["middle"],
+                8
+            ),
+            "lower": round(
+                bollinger["lower"],
+                8
+            )
+        } if bollinger else None,
+
+        "support": round(
+            sr["support"],
+            8
+        ) if sr else None,
+
+        "resistance": round(
+            sr["resistance"],
+            8
+        ) if sr else None,
+
+        "candle": candle,
+
+        "bullish_score": bullish_score,
+
+        "bearish_score": bearish_score,
+
+        "total_score": total_score,
+
+        "strength": round(
+            abs(
+                bullish_score
+                - bearish_score
+            )
+            / max(total_score, 1)
+            * 100,
+            1
+        ),
+
+        "reasons": reasons,
+
+        "candle_time": current.get(
+            "datetime"
+        ),
+
+        "updated_at": datetime.now(
+            timezone.utc
+        ).isoformat()
+    }
+
+    return result
+
+
+# =========================================================
+# HOME
+# =========================================================
+
+@app.route("/")
+def home():
+
+    return render_template(
+        "template.html",
+        real_pairs=REAL_PAIRS,
+        otc_pairs=OTC_PAIRS,
+        timeframes=TIMEFRAMES
+    )
+
+
+# =========================================================
+# HEALTH
+# =========================================================
+
+@app.route("/health")
+def health():
+
+    return jsonify({
+        "status": "ok",
+        "service": "Ai-Signal-pro",
+        "api_key_configured": bool(
+            API_KEY
+        ),
+        "time": datetime.now(
+            timezone.utc
+        ).isoformat()
+    })
+
+
+# =========================================================
+# PAIRS API
+# =========================================================
+
+@app.route("/api/pairs")
+def api_pairs():
+
+    return jsonify({
+
+        "success": True,
+
+        "real": REAL_PAIRS,
+
+        "otc": OTC_PAIRS,
+
+        "timeframes": list(
+            TIMEFRAMES.keys()
+        )
+    })
+
+
+# =========================================================
+# SIGNAL API
+# =========================================================
+
+@app.route("/api/signal")
+def api_signal():
+
+    symbol = request.args.get(
+        "symbol",
+        "EUR/USD"
+    )
+
+    timeframe = request.args.get(
+        "timeframe",
+        "1"
+    )
+
+    if str(timeframe) not in TIMEFRAMES:
+
+        return jsonify({
+
+            "success": False,
+
+            "error": (
+                "Invalid timeframe."
+            )
+        }), 400
+
+    try:
+
+        result = analyze_market(
+            symbol,
+            timeframe
+        )
+
+        return jsonify(result)
+
+    except Exception as e:
+
+        return jsonify({
+
+            "success": False,
+
+            "symbol": symbol,
+
+            "timeframe": timeframe,
+
+            "error": str(e),
+
+            "message": (
+                "Unable to generate signal."
+            )
+        }), 500
+
+
+# =========================================================
+# SIGNAL PAGE
+# =========================================================
+
+@app.route("/signal")
+def signal_page():
+
+    return render_template(
+        "template.html",
+        real_pairs=REAL_PAIRS,
+        otc_pairs=OTC_PAIRS,
+        timeframes=TIMEFRAMES
+    )
+
+
+# =========================================================
+# ERROR HANDLERS
+# =========================================================
+
+@app.errorhandler(404)
+def not_found(error):
+
+    return jsonify({
+
+        "success": False,
+
+        "error": "Not found."
+
+    }), 404
+
+
+@app.errorhandler(500)
+def internal_error(error):
+
+    return jsonify({
+
+        "success": False,
+
+        "error": "Internal server error."
+
+    }), 500
+
+
+# =========================================================
+# START
+# =========================================================
+
+if __name__ == "__main__":
+
+    port = int(
+        os.getenv(
+            "PORT",
+            "10000"
+        )
+    )
+
+    app.run(
+        host="0.0.0.0",
+        port=port,
+        debug=False
+    )
