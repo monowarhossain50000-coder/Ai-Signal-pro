@@ -10,18 +10,21 @@ from flask import Flask, render_template, jsonify, request
 
 
 # =========================================================
-# FLASK APP
+# FLASK
 # =========================================================
 
 app = Flask(__name__)
 
 API_KEY = os.getenv("TWELVEDATA_API_KEY")
 
-CACHE_SECONDS = 5
+CACHE_SECONDS = 8
 API_MIN_GAP = 12
 
 market_cache = {}
+quote_cache = {}
+
 last_api_request = 0
+last_quote_request = 0
 
 cache_lock = Lock()
 
@@ -124,24 +127,17 @@ def is_otc_symbol(symbol):
 def forex_weekend_closed():
     now = datetime.now(timezone.utc)
 
-    # Saturday
     if now.weekday() == 5:
         return True
 
-    # Sunday before 21:00 UTC
     if now.weekday() == 6 and now.hour < 21:
         return True
 
-    # Friday from 21:00 UTC
     if now.weekday() == 4 and now.hour >= 21:
         return True
 
     return False
 
-
-# =========================================================
-# DATETIME
-# =========================================================
 
 def parse_market_datetime(value):
 
@@ -167,41 +163,6 @@ def parse_market_datetime(value):
     return None
 
 
-def is_recent_market_data(candle, timeframe):
-
-    if not candle:
-        return False, "No candle data."
-
-    candle_time = parse_market_datetime(
-        candle.get("datetime")
-    )
-
-    if candle_time is None:
-        return False, "Candle time unavailable."
-
-    now = datetime.now(timezone.utc)
-
-    age_seconds = (
-        now - candle_time
-    ).total_seconds()
-
-    allowed_delay = max(
-        180,
-        TIMEFRAMES.get(
-            str(timeframe),
-            1
-        ) * 60 * 2
-    )
-
-    if age_seconds < -60:
-        return False, "Invalid future candle."
-
-    if age_seconds > allowed_delay:
-        return False, "Live market candle is too old."
-
-    return True, None
-
-
 # =========================================================
 # EMA
 # =========================================================
@@ -216,9 +177,7 @@ def calculate_ema(prices, period):
     multiplier = 2 / (period + 1)
 
     for price in prices[period:]:
-        ema = (
-            (price - ema) * multiplier
-        ) + ema
+        ema = ((price - ema) * multiplier) + ema
 
     return ema
 
@@ -237,38 +196,22 @@ def calculate_rsi(prices, period=14):
 
     for i in range(1, len(prices)):
 
-        change = (
-            prices[i] - prices[i - 1]
-        )
+        change = prices[i] - prices[i - 1]
 
-        gains.append(
-            max(change, 0)
-        )
+        gains.append(max(change, 0))
+        losses.append(max(-change, 0))
 
-        losses.append(
-            max(-change, 0)
-        )
-
-    avg_gain = (
-        sum(gains[:period]) / period
-    )
-
-    avg_loss = (
-        sum(losses[:period]) / period
-    )
+    avg_gain = sum(gains[:period]) / period
+    avg_loss = sum(losses[:period]) / period
 
     for i in range(period, len(gains)):
 
         avg_gain = (
-            (
-                avg_gain * (period - 1)
-            ) + gains[i]
+            (avg_gain * (period - 1)) + gains[i]
         ) / period
 
         avg_loss = (
-            (
-                avg_loss * (period - 1)
-            ) + losses[i]
+            (avg_loss * (period - 1)) + losses[i]
         ) / period
 
     if avg_loss == 0:
@@ -276,13 +219,11 @@ def calculate_rsi(prices, period=14):
 
     rs = avg_gain / avg_loss
 
-    return 100 - (
-        100 / (1 + rs)
-    )
+    return 100 - (100 / (1 + rs))
 
 
 # =========================================================
-# BOLLINGER BANDS
+# BOLLINGER
 # =========================================================
 
 def calculate_bollinger(
@@ -311,7 +252,8 @@ def calculate_bollinger(
     return {
         "upper": upper,
         "middle": middle,
-        "lower": lower
+        "lower": lower,
+        "width": upper - lower
     }
 
 
@@ -319,12 +261,9 @@ def calculate_bollinger(
 # SUPPORT / RESISTANCE
 # =========================================================
 
-def calculate_support_resistance(
-    candles,
-    lookback=50
-):
+def calculate_sr(candles, lookback=80):
 
-    if len(candles) < lookback:
+    if len(candles) < 10:
         return None
 
     recent = candles[-lookback:]
@@ -339,47 +278,84 @@ def calculate_support_resistance(
         for c in recent
     ]
 
+    resistance = max(highs)
+    support = min(lows)
+
     return {
-        "resistance": max(highs),
-        "support": min(lows)
+        "support": support,
+        "resistance": resistance
     }
 
 
 # =========================================================
-# CANDLE INFO
+# SWING SUPPORT / RESISTANCE
 # =========================================================
 
-def candle_info(candle):
+def calculate_swing_levels(candles):
 
-    o = safe_float(
-        candle.get("open")
-    )
+    if len(candles) < 15:
+        return {
+            "support": None,
+            "resistance": None
+        }
 
-    h = safe_float(
-        candle.get("high")
-    )
+    recent = candles[-60:]
 
-    l = safe_float(
-        candle.get("low")
-    )
+    swing_highs = []
+    swing_lows = []
 
-    c = safe_float(
-        candle.get("close")
-    )
+    for i in range(2, len(recent) - 2):
 
-    candle_range = h - l
+        h = safe_float(recent[i]["high"])
+        l = safe_float(recent[i]["low"])
+
+        left_h = safe_float(recent[i - 1]["high"])
+        right_h = safe_float(recent[i + 1]["high"])
+
+        left_l = safe_float(recent[i - 1]["low"])
+        right_l = safe_float(recent[i + 1]["low"])
+
+        if h >= left_h and h >= right_h:
+            swing_highs.append(h)
+
+        if l <= left_l and l <= right_l:
+            swing_lows.append(l)
+
+    return {
+        "support": max(swing_lows[-5:]) if swing_lows else None,
+        "resistance": min(swing_highs[-5:]) if swing_highs else None
+    }
+
+
+# =========================================================
+# CANDLE ANALYSIS
+# =========================================================
+
+def analyze_candle(candle):
+
+    o = safe_float(candle.get("open"))
+    h = safe_float(candle.get("high"))
+    l = safe_float(candle.get("low"))
+    c = safe_float(candle.get("close"))
+
+    candle_range = max(h - l, 0)
 
     body = abs(c - o)
 
+    upper_wick = max(
+        h - max(o, c),
+        0
+    )
+
+    lower_wick = max(
+        min(o, c) - l,
+        0
+    )
+
     if candle_range > 0:
 
-        body_ratio = (
-            body / candle_range
-        )
-
-        close_position = (
-            (c - l) / candle_range
-        )
+        body_ratio = body / candle_range
+        close_position = (c - l) / candle_range
 
     else:
 
@@ -397,14 +373,174 @@ def candle_info(candle):
 
     return {
         "direction": direction,
-        "body_ratio": body_ratio,
         "range": candle_range,
+        "body": body,
+        "body_ratio": body_ratio,
+        "upper_wick": upper_wick,
+        "lower_wick": lower_wick,
         "close_position": close_position
     }
 
 
 # =========================================================
-# MARKET DATA
+# RECENT CANDLE MOMENTUM
+# =========================================================
+
+def recent_momentum(candles, count=5):
+
+    recent = candles[-count:]
+
+    bullish = 0
+    bearish = 0
+
+    for candle in recent:
+
+        o = safe_float(candle["open"])
+        c = safe_float(candle["close"])
+
+        if c > o:
+            bullish += 1
+
+        elif c < o:
+            bearish += 1
+
+    if bullish > bearish:
+        return "BULLISH"
+
+    if bearish > bullish:
+        return "BEARISH"
+
+    return "NEUTRAL"
+
+
+# =========================================================
+# CANDLE PATTERN
+# =========================================================
+
+def candle_signal(info):
+
+    bullish = 0
+    bearish = 0
+    reasons = []
+
+    body_ratio = info["body_ratio"]
+    close_position = info["close_position"]
+
+    upper = info["upper_wick"]
+    lower = info["lower_wick"]
+    body = info["body"]
+
+    # Strong bullish candle
+    if (
+        info["direction"] == "BULLISH"
+        and body_ratio >= 0.60
+        and close_position >= 0.70
+    ):
+
+        bullish += 8
+
+        reasons.append(
+            "Strong bullish candle"
+        )
+
+    # Strong bearish candle
+    if (
+        info["direction"] == "BEARISH"
+        and body_ratio >= 0.60
+        and close_position <= 0.30
+    ):
+
+        bearish += 8
+
+        reasons.append(
+            "Strong bearish candle"
+        )
+
+    # Lower wick rejection
+    if (
+        lower > body * 1.4
+        and close_position >= 0.55
+    ):
+
+        bullish += 10
+
+        reasons.append(
+            "Lower-wick bullish rejection"
+        )
+
+    # Upper wick rejection
+    if (
+        upper > body * 1.4
+        and close_position <= 0.45
+    ):
+
+        bearish += 10
+
+        reasons.append(
+            "Upper-wick bearish rejection"
+        )
+
+    # Doji warning
+    if body_ratio < 0.20:
+
+        reasons.append(
+            "Small-body / indecision candle"
+        )
+
+    return bullish, bearish, reasons
+
+
+# =========================================================
+# DATA AGE
+# =========================================================
+
+def candle_age_seconds(candle):
+
+    dt = parse_market_datetime(
+        candle.get("datetime")
+    )
+
+    if dt is None:
+        return None
+
+    return max(
+        0,
+        (
+            datetime.now(timezone.utc) - dt
+        ).total_seconds()
+    )
+
+
+# =========================================================
+# CURRENT 1-MINUTE CANDLE WINDOW
+# =========================================================
+
+def current_candle_window():
+
+    now = datetime.now(timezone.utc)
+
+    seconds = (
+        now.minute * 60
+        + now.second
+        + now.microsecond / 1000000
+    )
+
+    elapsed = seconds % 60
+
+    remaining = 60 - elapsed
+
+    return {
+        "elapsed_seconds": round(elapsed, 2),
+        "remaining_seconds": round(
+            remaining,
+            2
+        ),
+        "first_30_seconds": elapsed < 30
+    }
+
+
+# =========================================================
+# TWELVE DATA CANDLES
 # =========================================================
 
 def get_market_candles(symbol, minutes):
@@ -420,10 +556,7 @@ def get_market_candles(symbol, minutes):
 
     now = time.time()
 
-    # -----------------------------------------------------
     # CACHE
-    # -----------------------------------------------------
-
     with cache_lock:
 
         cached = market_cache.get(
@@ -432,17 +565,14 @@ def get_market_candles(symbol, minutes):
 
         if cached:
 
-            age = (
+            if (
                 now - cached["time"]
-            )
+                < CACHE_SECONDS
+            ):
 
-            if age < CACHE_SECONDS:
                 return cached["data"]
 
-    # -----------------------------------------------------
-    # API RATE LIMIT
-    # -----------------------------------------------------
-
+    # RATE LIMIT
     with cache_lock:
 
         now = time.time()
@@ -460,45 +590,26 @@ def get_market_candles(symbol, minutes):
             if cached:
                 return cached["data"]
 
-            wait_time = (
-                API_MIN_GAP - elapsed
-            )
-
             time.sleep(
-                wait_time
+                API_MIN_GAP - elapsed
             )
 
         last_api_request = time.time()
 
-    # -----------------------------------------------------
-    # INTERVAL
-    # -----------------------------------------------------
-
-    if minutes == 60:
-
-        interval = "1h"
-
-    elif minutes == 240:
-
-        interval = "4h"
-
-    else:
-
-        interval = "1min"
-
-    # -----------------------------------------------------
-    # API KEY
-    # -----------------------------------------------------
-
     if not API_KEY:
 
         raise Exception(
-            "TWELVEDATA_API_KEY environment variable is missing."
+            "TWELVEDATA_API_KEY is missing."
         )
 
-    # -----------------------------------------------------
-    # TWELVE DATA
-    # -----------------------------------------------------
+    if minutes == 60:
+        interval = "1h"
+
+    elif minutes == 240:
+        interval = "4h"
+
+    else:
+        interval = "1min"
 
     params = {
         "symbol": symbol,
@@ -513,10 +624,6 @@ def get_market_candles(symbol, minutes):
         timeout=20
     )
 
-    # -----------------------------------------------------
-    # RATE LIMIT
-    # -----------------------------------------------------
-
     if response.status_code == 429:
 
         cached = market_cache.get(
@@ -530,17 +637,9 @@ def get_market_candles(symbol, minutes):
             "Twelve Data rate limit reached."
         )
 
-    # -----------------------------------------------------
-    # HTTP ERROR
-    # -----------------------------------------------------
-
     response.raise_for_status()
 
     data = response.json()
-
-    # -----------------------------------------------------
-    # API ERROR
-    # -----------------------------------------------------
 
     if "values" not in data:
 
@@ -551,10 +650,6 @@ def get_market_candles(symbol, minutes):
             )
         )
 
-    # -----------------------------------------------------
-    # RAW DATA
-    # -----------------------------------------------------
-
     raw = list(
         reversed(
             data["values"]
@@ -563,40 +658,38 @@ def get_market_candles(symbol, minutes):
 
     candles = []
 
-    # -----------------------------------------------------
-    # NATIVE TIMEFRAMES
-    # -----------------------------------------------------
-
+    # NATIVE
     if minutes in [1, 60, 240]:
 
         for item in raw:
 
             candles.append({
-                "datetime": item.get(
-                    "datetime"
-                ),
 
-                "open": safe_float(
-                    item.get("open")
-                ),
+                "datetime":
+                    item.get("datetime"),
 
-                "high": safe_float(
-                    item.get("high")
-                ),
+                "open":
+                    safe_float(
+                        item.get("open")
+                    ),
 
-                "low": safe_float(
-                    item.get("low")
-                ),
+                "high":
+                    safe_float(
+                        item.get("high")
+                    ),
 
-                "close": safe_float(
-                    item.get("close")
-                )
+                "low":
+                    safe_float(
+                        item.get("low")
+                    ),
+
+                "close":
+                    safe_float(
+                        item.get("close")
+                    )
             })
 
-    # -----------------------------------------------------
-    # AGGREGATED TIMEFRAMES
-    # -----------------------------------------------------
-
+    # AGGREGATION
     else:
 
         for i in range(
@@ -621,9 +714,7 @@ def get_market_candles(symbol, minutes):
 
                 "open":
                     safe_float(
-                        group[0].get(
-                            "open"
-                        )
+                        group[0].get("open")
                     ),
 
                 "high":
@@ -644,25 +735,15 @@ def get_market_candles(symbol, minutes):
 
                 "close":
                     safe_float(
-                        group[-1].get(
-                            "close"
-                        )
+                        group[-1].get("close")
                     )
             })
-
-    # -----------------------------------------------------
-    # VALIDATION
-    # -----------------------------------------------------
 
     if len(candles) < 30:
 
         raise Exception(
-            "Not enough market candles."
+            "Not enough candle data."
         )
-
-    # -----------------------------------------------------
-    # CACHE
-    # -----------------------------------------------------
 
     with cache_lock:
 
@@ -675,20 +756,125 @@ def get_market_candles(symbol, minutes):
 
 
 # =========================================================
-# SIGNAL ANALYSIS
+# LIVE QUOTE
 # =========================================================
 
-def analyze_market(
-    symbol,
-    timeframe
-):
+def get_live_quote(symbol):
+
+    global last_quote_request
+
+    symbol = clean_symbol(symbol)
+
+    cache_key = (
+        "quote",
+        symbol
+    )
+
+    now = time.time()
+
+    cached = quote_cache.get(
+        cache_key
+    )
+
+    if cached:
+
+        if now - cached["time"] < 8:
+            return cached["price"]
+
+    with cache_lock:
+
+        now = time.time()
+
+        elapsed = (
+            now - last_quote_request
+        )
+
+        if elapsed < API_MIN_GAP:
+
+            cached = quote_cache.get(
+                cache_key
+            )
+
+            if cached:
+                return cached["price"]
+
+            return None
+
+        last_quote_request = time.time()
+
+    if not API_KEY:
+        return None
+
+    try:
+
+        response = requests.get(
+            "https://api.twelvedata.com/quote",
+            params={
+                "symbol": symbol,
+                "apikey": API_KEY
+            },
+            timeout=15
+        )
+
+        if response.status_code != 200:
+            return None
+
+        data = response.json()
+
+        price = safe_float(
+            data.get("close"),
+            None
+        )
+
+        if price is None:
+            return None
+
+        quote_cache[cache_key] = {
+            "time": time.time(),
+            "price": price
+        }
+
+        return price
+
+    except Exception:
+        return None
+
+
+# =========================================================
+# PRICE DISTANCE
+# =========================================================
+
+def percentage_distance(price, level):
+
+    if price is None or level is None:
+        return None
+
+    if level == 0:
+        return None
+
+    return abs(
+        price - level
+    ) / level * 100
+
+
+# =========================================================
+# MAIN SCANNER
+# =========================================================
+
+def analyze_market(symbol, timeframe):
 
     minutes = TIMEFRAMES.get(
         str(timeframe),
         1
     )
 
+    original_symbol = symbol
+
     clean = clean_symbol(symbol)
+
+    otc = is_otc_symbol(
+        original_symbol
+    )
 
     candles = get_market_candles(
         clean,
@@ -696,21 +882,35 @@ def analyze_market(
     )
 
     if len(candles) < 30:
-
         raise Exception(
             "Insufficient candle data."
         )
+
+    # -----------------------------------------------------
+    # CLOSED CANDLE DATA
+    # -----------------------------------------------------
 
     closes = [
         safe_float(c["close"])
         for c in candles
     ]
 
-    current = candles[-1]
+    current_candle = candles[-1]
 
-    price = safe_float(
-        current["close"]
+    last_closed_price = safe_float(
+        current_candle["close"]
     )
+
+    # -----------------------------------------------------
+    # LIVE PRICE
+    # -----------------------------------------------------
+
+    live_price = get_live_quote(
+        clean
+    )
+
+    if live_price is None:
+        live_price = last_closed_price
 
     # -----------------------------------------------------
     # INDICATORS
@@ -736,88 +936,128 @@ def analyze_market(
         14
     )
 
-    bollinger = calculate_bollinger(
+    bb = calculate_bollinger(
         closes,
         20,
         2
     )
 
-    sr = calculate_support_resistance(
+    sr = calculate_sr(
         candles,
-        min(50, len(candles))
+        80
     )
 
-    candle = candle_info(
-        current
+    swings = calculate_swing_levels(
+        candles
     )
+
+    candle = analyze_candle(
+        current_candle
+    )
+
+    momentum = recent_momentum(
+        candles,
+        5
+    )
+
+    # -----------------------------------------------------
+    # LEVELS
+    # -----------------------------------------------------
+
+    support = sr["support"] if sr else None
+    resistance = sr["resistance"] if sr else None
+
+    swing_support = swings["support"]
+    swing_resistance = swings["resistance"]
+
+    # Prefer nearby swing levels
+    if swing_support is not None:
+
+        if (
+            support is None
+            or abs(live_price - swing_support)
+            < abs(live_price - support)
+        ):
+            support = swing_support
+
+    if swing_resistance is not None:
+
+        if (
+            resistance is None
+            or abs(live_price - swing_resistance)
+            < abs(live_price - resistance)
+        ):
+            resistance = swing_resistance
 
     # -----------------------------------------------------
     # SCORE
     # -----------------------------------------------------
 
-    bullish_score = 0
-    bearish_score = 0
+    bullish = 0
+    bearish = 0
 
-    reasons = []
+    bull_reasons = []
+    bear_reasons = []
 
-    # EMA 20
+    # -----------------------------------------------------
+    # EMA TREND
+    # -----------------------------------------------------
+
     if ema20 is not None:
 
-        if price > ema20:
+        if live_price > ema20:
 
-            bullish_score += 15
+            bullish += 8
 
-            reasons.append(
+            bull_reasons.append(
                 "Price above EMA20"
             )
 
-        elif price < ema20:
+        elif live_price < ema20:
 
-            bearish_score += 15
+            bearish += 8
 
-            reasons.append(
+            bear_reasons.append(
                 "Price below EMA20"
             )
 
-    # EMA 50
     if ema50 is not None:
 
-        if price > ema50:
+        if live_price > ema50:
 
-            bullish_score += 15
+            bullish += 8
 
-            reasons.append(
+            bull_reasons.append(
                 "Price above EMA50"
             )
 
-        elif price < ema50:
+        elif live_price < ema50:
 
-            bearish_score += 15
+            bearish += 8
 
-            reasons.append(
+            bear_reasons.append(
                 "Price below EMA50"
             )
 
-    # EMA 200
     if ema200 is not None:
 
-        if price > ema200:
+        if live_price > ema200:
 
-            bullish_score += 15
+            bullish += 8
 
-            reasons.append(
+            bull_reasons.append(
                 "Price above EMA200"
             )
 
-        elif price < ema200:
+        elif live_price < ema200:
 
-            bearish_score += 15
+            bearish += 8
 
-            reasons.append(
+            bear_reasons.append(
                 "Price below EMA200"
             )
 
-    # EMA trend
+    # EMA alignment
     if (
         ema20 is not None
         and ema50 is not None
@@ -825,157 +1065,309 @@ def analyze_market(
 
         if ema20 > ema50:
 
-            bullish_score += 10
+            bullish += 8
 
-            reasons.append(
+            bull_reasons.append(
                 "EMA20 above EMA50"
             )
 
         elif ema20 < ema50:
 
-            bearish_score += 10
+            bearish += 8
 
-            reasons.append(
+            bear_reasons.append(
                 "EMA20 below EMA50"
             )
 
-    # RSI
-    if rsi is not None:
-
-        if rsi >= 55:
-
-            bullish_score += 15
-
-            reasons.append(
-                "RSI bullish"
-            )
-
-        elif rsi <= 45:
-
-            bearish_score += 15
-
-            reasons.append(
-                "RSI bearish"
-            )
-
-    # Bollinger
-    if bollinger:
-
-        if price > bollinger["middle"]:
-
-            bullish_score += 10
-
-            reasons.append(
-                "Price above Bollinger middle"
-            )
-
-        elif price < bollinger["middle"]:
-
-            bearish_score += 10
-
-            reasons.append(
-                "Price below Bollinger middle"
-            )
-
-    # Candle
-    if candle["direction"] == "BULLISH":
-
-        bullish_score += 10
-
-        reasons.append(
-            "Current candle bullish"
-        )
-
-    elif candle["direction"] == "BEARISH":
-
-        bearish_score += 10
-
-        reasons.append(
-            "Current candle bearish"
-        )
-
-    # Support / Resistance
-    if sr:
-
-        support = sr["support"]
-        resistance = sr["resistance"]
-
-        distance_support = abs(
-            price - support
-        )
-
-        distance_resistance = abs(
-            resistance - price
-        )
+    if (
+        ema20 is not None
+        and ema50 is not None
+        and ema200 is not None
+    ):
 
         if (
-            distance_support
-            < distance_resistance
+            ema20 > ema50
+            and ema50 > ema200
         ):
 
-            bullish_score += 5
+            bullish += 10
 
-            reasons.append(
-                "Price closer to support"
+            bull_reasons.append(
+                "EMA bullish alignment"
             )
 
         elif (
-            distance_resistance
-            < distance_support
+            ema20 < ema50
+            and ema50 < ema200
         ):
 
-            bearish_score += 5
+            bearish += 10
 
-            reasons.append(
-                "Price closer to resistance"
+            bear_reasons.append(
+                "EMA bearish alignment"
             )
+
+    # -----------------------------------------------------
+    # BOLLINGER BAND
+    # -----------------------------------------------------
+
+    bb_position = "UNKNOWN"
+
+    if bb:
+
+        upper = bb["upper"]
+        middle = bb["middle"]
+        lower = bb["lower"]
+
+        if live_price <= lower:
+
+            bb_position = "LOWER BAND"
+
+            bullish += 12
+
+            bull_reasons.append(
+                "Price at/below lower Bollinger Band"
+            )
+
+        elif live_price >= upper:
+
+            bb_position = "UPPER BAND"
+
+            bearish += 12
+
+            bear_reasons.append(
+                "Price at/above upper Bollinger Band"
+            )
+
+        elif live_price > middle:
+
+            bb_position = "ABOVE MIDDLE"
+
+            bullish += 5
+
+            bull_reasons.append(
+                "Price above Bollinger middle"
+            )
+
+        elif live_price < middle:
+
+            bb_position = "BELOW MIDDLE"
+
+            bearish += 5
+
+            bear_reasons.append(
+                "Price below Bollinger middle"
+            )
+
+    # -----------------------------------------------------
+    # SUPPORT
+    # -----------------------------------------------------
+
+    if support is not None:
+
+        support_distance = (
+            percentage_distance(
+                live_price,
+                support
+            )
+        )
+
+        if (
+            support_distance is not None
+            and support_distance <= 0.15
+        ):
+
+            bullish += 15
+
+            bull_reasons.append(
+                "Price near support"
+            )
+
+    # -----------------------------------------------------
+    # RESISTANCE
+    # -----------------------------------------------------
+
+    if resistance is not None:
+
+        resistance_distance = (
+            percentage_distance(
+                live_price,
+                resistance
+            )
+        )
+
+        if (
+            resistance_distance is not None
+            and resistance_distance <= 0.15
+        ):
+
+            bearish += 15
+
+            bear_reasons.append(
+                "Price near resistance"
+            )
+
+    # -----------------------------------------------------
+    # CANDLE PATTERN
+    # -----------------------------------------------------
+
+    candle_bull, candle_bear, candle_reasons = (
+        candle_signal(candle)
+    )
+
+    bullish += candle_bull
+    bearish += candle_bear
+
+    for reason in candle_reasons:
+
+        if "bullish" in reason.lower():
+            bull_reasons.append(reason)
+
+        elif "bearish" in reason.lower():
+            bear_reasons.append(reason)
+
+    # -----------------------------------------------------
+    # MOMENTUM
+    # -----------------------------------------------------
+
+    if momentum == "BULLISH":
+
+        bullish += 8
+
+        bull_reasons.append(
+            "Recent candle momentum bullish"
+        )
+
+    elif momentum == "BEARISH":
+
+        bearish += 8
+
+        bear_reasons.append(
+            "Recent candle momentum bearish"
+        )
+
+    # -----------------------------------------------------
+    # RSI — CONFIRMATION ONLY
+    # -----------------------------------------------------
+
+    if rsi is not None:
+
+        if 52 <= rsi <= 68:
+
+            bullish += 5
+
+            bull_reasons.append(
+                "RSI confirms bullish momentum"
+            )
+
+        elif 32 <= rsi <= 48:
+
+            bearish += 5
+
+            bear_reasons.append(
+                "RSI confirms bearish momentum"
+            )
+
+        # Oversold reversal
+        if rsi < 30:
+
+            bullish += 4
+
+            bull_reasons.append(
+                "RSI oversold reversal zone"
+            )
+
+        # Overbought reversal
+        if rsi > 70:
+
+            bearish += 4
+
+            bear_reasons.append(
+                "RSI overbought reversal zone"
+            )
+
+    # -----------------------------------------------------
+    # SCORE DIFFERENCE
+    # -----------------------------------------------------
+
+    total = bullish + bearish
+
+    difference = abs(
+        bullish - bearish
+    )
+
+    if total > 0:
+
+        strength = round(
+            difference / total * 100,
+            1
+        )
+
+    else:
+
+        strength = 0
 
     # -----------------------------------------------------
     # SIGNAL
     # -----------------------------------------------------
 
-    total_score = (
-        bullish_score
-        + bearish_score
-    )
-
-    if total_score <= 0:
-
-        direction = "NO TRADE"
-        confidence = 50
-
-    elif bullish_score > bearish_score:
+    if bullish > bearish:
 
         direction = "CALL / UP"
 
-        confidence = round(
-            50
-            + (
-                bullish_score
-                / max(total_score, 1)
-            ) * 50
-        )
+        dominant = bullish
+        opposite = bearish
 
-    elif bearish_score > bullish_score:
+        selected_reasons = bull_reasons
+
+    elif bearish > bullish:
 
         direction = "PUT / DOWN"
 
-        confidence = round(
-            50
-            + (
-                bearish_score
-                / max(total_score, 1)
-            ) * 50
-        )
+        dominant = bearish
+        opposite = bullish
+
+        selected_reasons = bear_reasons
 
     else:
 
         direction = "NO TRADE"
+
+        dominant = 0
+        opposite = 0
+
+        selected_reasons = [
+            "Bullish and bearish scores are balanced"
+        ]
+
+    # -----------------------------------------------------
+    # CONFIDENCE
+    # -----------------------------------------------------
+
+    if total > 0:
+
+        confidence = (
+            50
+            + (
+                difference
+                / total
+            ) * 45
+        )
+
+        confidence = round(
+            confidence
+        )
+
+    else:
+
         confidence = 50
 
     confidence = max(
         50,
-        min(99, confidence)
+        min(
+            95,
+            confidence
+        )
     )
 
     # -----------------------------------------------------
@@ -1014,37 +1406,43 @@ def analyze_market(
 
             trend = "SIDEWAYS"
 
-    elif (
-        ema20 is not None
-        and ema50 is not None
-    ):
-
-        if ema20 > ema50:
-
-            trend = "BULLISH"
-
-        elif ema20 < ema50:
-
-            trend = "BEARISH"
-
-        else:
-
-            trend = "SIDEWAYS"
-
     else:
 
         trend = "UNKNOWN"
 
     # -----------------------------------------------------
-    # MARKET STATUS
+    # FIRST 30 SECOND WINDOW
     # -----------------------------------------------------
 
-    otc = is_otc_symbol(symbol)
+    window = current_candle_window()
+
+    # -----------------------------------------------------
+    # DATA AGE
+    # -----------------------------------------------------
+
+    age = candle_age_seconds(
+        current_candle
+    )
+
+    if age is not None:
+
+        data_recent = age <= max(
+            180,
+            minutes * 60 * 2
+        )
+
+    else:
+
+        data_recent = False
+
+    # -----------------------------------------------------
+    # MARKET STATUS
+    # -----------------------------------------------------
 
     if otc:
 
         market_status = (
-            "OTC / Proxy Market Data"
+            "OTC / PROXY DATA"
         )
 
     else:
@@ -1062,31 +1460,30 @@ def analyze_market(
             )
 
     # -----------------------------------------------------
-    # CANDLE STATUS
+    # SCANNER STATUS
     # -----------------------------------------------------
 
-    recent_ok, recent_message = (
-        is_recent_market_data(
-            current,
-            str(timeframe)
+    if window["first_30_seconds"]:
+
+        scan_status = (
+            "FIRST 30 SECONDS"
         )
-    )
 
-    if not recent_ok and not otc:
+    else:
 
-        market_status = (
-            "DATA DELAYED"
+        scan_status = (
+            "AFTER 30 SECONDS"
         )
 
     # -----------------------------------------------------
     # RESULT
     # -----------------------------------------------------
 
-    result = {
+    return {
 
         "success": True,
 
-        "symbol": symbol,
+        "symbol": original_symbol,
 
         "clean_symbol": clean,
 
@@ -1094,99 +1491,128 @@ def analyze_market(
 
         "minutes": minutes,
 
-        "direction": direction,
-
         "signal": direction,
+
+        "direction": direction,
 
         "confidence": confidence,
 
-        "price": price,
+        "bullish_score": bullish,
+
+        "bearish_score": bearish,
+
+        "score_difference": difference,
+
+        "strength": strength,
+
+        "price": round(
+            live_price,
+            8
+        ),
+
+        "last_candle_close": round(
+            last_closed_price,
+            8
+        ),
 
         "trend": trend,
 
+        "momentum": momentum,
+
         "market_status": market_status,
 
-        "is_otc": otc,
+        "scan_status": scan_status,
 
-        "data_recent": recent_ok,
+        "first_30_seconds":
+            window["first_30_seconds"],
 
-        "data_message": recent_message,
+        "elapsed_seconds":
+            window["elapsed_seconds"],
 
-        "rsi": round(
-            rsi,
-            2
-        ) if rsi is not None else None,
+        "remaining_seconds":
+            window["remaining_seconds"],
 
-        "ema20": round(
-            ema20,
-            8
-        ) if ema20 is not None else None,
+        "data_recent":
+            data_recent,
 
-        "ema50": round(
-            ema50,
-            8
-        ) if ema50 is not None else None,
+        "candle_age_seconds":
+            round(age, 2)
+            if age is not None
+            else None,
 
-        "ema200": round(
-            ema200,
-            8
-        ) if ema200 is not None else None,
+        "rsi":
+            round(rsi, 2)
+            if rsi is not None
+            else None,
+
+        "ema20":
+            round(ema20, 8)
+            if ema20 is not None
+            else None,
+
+        "ema50":
+            round(ema50, 8)
+            if ema50 is not None
+            else None,
+
+        "ema200":
+            round(ema200, 8)
+            if ema200 is not None
+            else None,
 
         "bollinger": {
-            "upper": round(
-                bollinger["upper"],
-                8
-            ),
-            "middle": round(
-                bollinger["middle"],
-                8
-            ),
-            "lower": round(
-                bollinger["lower"],
-                8
-            )
-        } if bollinger else None,
 
-        "support": round(
-            sr["support"],
-            8
-        ) if sr else None,
+            "upper":
+                round(bb["upper"], 8),
 
-        "resistance": round(
-            sr["resistance"],
-            8
-        ) if sr else None,
+            "middle":
+                round(bb["middle"], 8),
+
+            "lower":
+                round(bb["lower"], 8),
+
+            "width":
+                round(bb["width"], 8)
+
+        } if bb else None,
+
+        "bollinger_position":
+            bb_position,
+
+        "support":
+            round(support, 8)
+            if support is not None
+            else None,
+
+        "resistance":
+            round(resistance, 8)
+            if resistance is not None
+            else None,
 
         "candle": candle,
 
-        "bullish_score": bullish_score,
+        "reasons":
+            selected_reasons[:8],
 
-        "bearish_score": bearish_score,
+        "bullish_reasons":
+            bull_reasons[:8],
 
-        "total_score": total_score,
+        "bearish_reasons":
+            bear_reasons[:8],
 
-        "strength": round(
-            abs(
-                bullish_score
-                - bearish_score
-            )
-            / max(total_score, 1)
-            * 100,
-            1
-        ),
+        "candle_time":
+            current_candle.get(
+                "datetime"
+            ),
 
-        "reasons": reasons,
+        "is_otc":
+            otc,
 
-        "candle_time": current.get(
-            "datetime"
-        ),
-
-        "updated_at": datetime.now(
-            timezone.utc
-        ).isoformat()
+        "updated_at":
+            datetime.now(
+                timezone.utc
+            ).isoformat()
     }
-
-    return result
 
 
 # =========================================================
@@ -1212,19 +1638,27 @@ def home():
 def health():
 
     return jsonify({
+
         "status": "ok",
-        "service": "Ai-Signal-pro",
-        "api_key_configured": bool(
-            API_KEY
-        ),
-        "time": datetime.now(
-            timezone.utc
-        ).isoformat()
+
+        "service":
+            "Ai-Signal-pro",
+
+        "scanner":
+            "chart-analysis-engine",
+
+        "api_key_configured":
+            bool(API_KEY),
+
+        "time":
+            datetime.now(
+                timezone.utc
+            ).isoformat()
     })
 
 
 # =========================================================
-# PAIRS API
+# PAIRS
 # =========================================================
 
 @app.route("/api/pairs")
@@ -1238,9 +1672,8 @@ def api_pairs():
 
         "otc": OTC_PAIRS,
 
-        "timeframes": list(
-            TIMEFRAMES.keys()
-        )
+        "timeframes":
+            list(TIMEFRAMES.keys())
     })
 
 
@@ -1267,9 +1700,9 @@ def api_signal():
 
             "success": False,
 
-            "error": (
+            "error":
                 "Invalid timeframe."
-            )
+
         }), 400
 
     try:
@@ -1293,9 +1726,9 @@ def api_signal():
 
             "error": str(e),
 
-            "message": (
-                "Unable to generate signal."
-            )
+            "message":
+                "Unable to scan market."
+
         }), 500
 
 
@@ -1315,7 +1748,7 @@ def signal_page():
 
 
 # =========================================================
-# ERROR HANDLERS
+# ERRORS
 # =========================================================
 
 @app.errorhandler(404)
@@ -1337,7 +1770,8 @@ def internal_error(error):
 
         "success": False,
 
-        "error": "Internal server error."
+        "error":
+            "Internal server error."
 
     }), 500
 
