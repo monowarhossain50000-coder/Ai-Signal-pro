@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>AI SIGNAL PRO</title>
 
     <style>
@@ -48,10 +47,6 @@
             margin-top: 7px;
             font-size: 13px;
         }
-
-        /* ================================
-           CONTROL PANEL
-        ================================= */
 
         .control-panel {
             background: rgba(12, 20, 34, 0.95);
@@ -117,10 +112,6 @@
             transform: none;
         }
 
-        /* ================================
-           STATUS
-        ================================= */
-
         .status-bar {
             margin-top: 13px;
             display: flex;
@@ -160,10 +151,6 @@
             font-size: 11px;
         }
 
-        /* ================================
-           SIGNAL CARD
-        ================================= */
-
         .signal-card {
             background: rgba(8, 16, 28, .97);
             border: 1px solid #20334d;
@@ -183,7 +170,7 @@
 
         .signal-main {
             font-size: 42px;
-            font-weight: 1000;
+            font-weight: 900;
             margin-top: 8px;
             line-height: 1.1;
         }
@@ -239,10 +226,6 @@
             font-weight: 800;
         }
 
-        /* ================================
-           TIMER
-        ================================= */
-
         .timer-box {
             margin-top: 18px;
             background: #0b1422;
@@ -272,10 +255,6 @@
             transition: width .5s linear;
         }
 
-        /* ================================
-           SECTION
-        ================================= */
-
         .section {
             background: rgba(8, 16, 28, .97);
             border: 1px solid #20334d;
@@ -285,4 +264,2129 @@
         }
 
         .section-title {
-            font-size: 
+            font-size: 17px;
+            font-weight: 900;
+            margin-bottom: 15px;
+            color: #ffffff;
+        }
+
+        .section-title span {
+            color: #00e5ff;
+        }
+
+        .market-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .market-box {
+            background: #0b1422;
+            border: 1px solid #1e3047;
+            border-radius: 12px;
+            padding: 13px;
+        }
+
+        .market-box .label {
+            color: #71859d;
+            font-size: 10px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .market-box .value {
+            font-size: 15px;
+            font-weight: 800;
+            word-break: break-word;
+        }
+
+        .bb-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .bb-box {
+            background: #0b1422;
+            border: 1px solid #1e3047;
+            border-radius: 12px;
+            padding: 14px;
+        }
+
+        .bb-label {
+            color: #71859d;
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+
+        .bb-value {
+            margin-top: 6px;
+            font-size: 16px;
+            font-weight: 800;
+        }
+
+        .reason-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .reason-box {
+            background: #0b1422;
+            border: 1px solid #1e3047;
+            border-radius: 12px;
+            padding: 14px;
+        }
+
+        .reason-box h3 {
+            font-size: 13px;
+            margin-bottom: 9px;
+        }
+
+        .reason-box ul {
+            list-style: none;
+        }
+
+        .reason-box li {
+            color: #a9b8c9;
+            font-size: 12px;
+            line-height: 1.6;
+            padding: 3px 0;
+        }
+
+        .reason-box li::before {
+            content: "•";
+            color: #00d9ff;
+            margin-right: 7px;
+        }
+
+        .candle-box {
+            background: #0b1422;
+            border: 1px solid #1e3047;
+            border-radius: 12px;
+            padding: 15px;
+        }
+
+        .candle-status {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 8px;
+            background: rgba(0, 229, 255, .08);
+            border: 1px solid rgba(0, 229, 255, .25);
+            color: #00e5ff;
+            font-size: 11px;
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+
+        .ohlc-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+
+        .ohlc-item {
+            background: #08101b;
+            border-radius: 9px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .ohlc-item small {
+            display: block;
+            color: #71859d;
+            font-size: 9px;
+            margin-bottom: 5px;
+        }
+
+        .ohlc-item strong {
+            font-size: 13px;
+        }
+
+        .empty-state {
+            padding: 35px 15px;
+            text-align: center;
+            color: #64748b;
+        }
+
+        .empty-state .icon {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+
+        .empty-state h3 {
+            color: #a7b6c8;
+            font-size: 16px;
+            margin-bottom: 6px;
+        }
+
+        .empty-state p {
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .loading {
+            display: none;
+            margin-top: 12px;
+            color: #00d9ff;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .spinner {
+            width: 14px;
+            height: 14px;
+            display: inline-block;
+            vertical-align: middle;
+            border: 2px solid rgba(0,217,255,.25);
+            border-top-color: #00d9ff;
+            border-radius: 50%;
+            animation: spin .7s linear infinite;
+            margin-right: 6px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        footer {
+            text-align: center;
+            color: #526176;
+            font-size: 10px;
+            padding: 12px 5px 20px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 850px) {
+
+            .controls {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .scan-btn {
+                width: 100%;
+            }
+
+            .market-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .ohlc-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+
+            body {
+                padding: 9px;
+            }
+
+            .header h1 {
+                font-size: 23px;
+            }
+
+            .controls {
+                grid-template-columns: 1fr;
+            }
+
+            .signal-card {
+                padding: 17px;
+            }
+
+            .signal-main {
+                font-size: 34px;
+            }
+
+            .market-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .bb-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .reason-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .ohlc-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <h1>AI <span>SIGNAL PRO</span></h1>
+        <p>Smart Market Analysis &amp; Trading Signal System</p>
+    </div>
+
+
+    <div class="control-panel">
+
+        <div class="controls">
+
+            <div class="control-group">
+                <label for="marketType">MARKET TYPE</label>
+
+                <select id="marketType">
+                    <option value="real">REAL MARKET</option>
+                    <option value="otc">OTC MARKET</option>
+                </select>
+            </div>
+
+
+            <div class="control-group">
+                <label for="symbol">ASSET</label>
+
+                <select id="symbol">
+
+                    {% for pair in real_pairs %}
+                    <option value="{{ pair }}">
+                        {{ pair }}
+                    </option>
+                    {% endfor %}
+
+                </select>
+            </div>
+
+
+            <div class="control-group">
+                <label for="timeframe">TIMEFRAME</label>
+
+                <select id="timeframe">
+
+                    {% for tf in timeframes %}
+                    <option value="{{ tf }}">
+                        {{ tf }} MIN
+                    </option>
+                    {% endfor %}
+
+                </select>
+            </div>
+
+
+            <div>
+                <button
+                    id="scanBtn"
+                    class="scan-btn"
+                    type="button">
+
+                    SCAN CHART
+
+                </button>
+            </div>
+
+        </div>
+
+
+        <div class="status-bar">
+
+            <div class="connection">
+
+                <span
+                    id="statusDot"
+                    class="dot">
+                </span>
+
+                <span id="statusText">
+                    READY — PRESS SCAN CHART
+                </span>
+
+            </div>
+
+
+            <div
+                id="lastUpdate"
+                class="last-update">
+
+                No scan yet
+
+            </div>
+
+        </div>
+
+
+        <div
+            id="loading"
+            class="loading">
+
+            <span class="spinner"></span>
+
+            Analyzing live market data...
+
+        </div>
+
+    </div>
+
+
+    <div class="signal-card">
+
+        <div class="signal-title">
+            CURRENT MARKET SIGNAL
+        </div>
+
+
+        <div
+            id="signalMain"
+            class="signal-main wait">
+
+            READY
+
+        </div>
+
+
+        <div
+            id="signalSub"
+            class="signal-sub">
+
+            Select an asset and press SCAN CHART
+
+        </div>
+
+
+        <div class="signal-meta">
+
+            <div class="meta-box">
+
+                <div class="meta-label">
+                    Asset
+                </div>
+
+                <div
+                    id="metaSymbol"
+                    class="meta-value">
+
+                    —
+
+                </div>
+
+            </div>
+
+
+            <div class="meta-box">
+
+                <div class="meta-label">
+                    Timeframe
+                </div>
+
+                <div
+                    id="metaTimeframe"
+                    class="meta-value">
+
+                    —
+
+                </div>
+
+            </div>
+
+
+            <div class="meta-box">
+
+                <div class="meta-label">
+                    Confidence
+                </div>
+
+                <div
+                    id="metaConfidence"
+                    class="meta-value">
+
+                    —
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="timer-box">
+
+            <div
+                id="timerText"
+                class="timer-text">
+
+                No active scan
+
+            </div>
+
+
+            <div class="progress">
+
+                <div
+                    id="progressBar"
+                    class="progress-bar">
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="section">
+
+        <div class="section-title">
+            MARKET <span>ANALYSIS</span>
+        </div>
+
+
+        <div class="market-grid">
+
+            <div class="market-box">
+                <div class="label">
+                    Current Price
+                </div>
+
+                <div
+                    id="price"
+                    class="value">
+
+                    —
+
+                </div>
+            </div>
+
+
+            <div class="market-box">
+                <div class="label">
+                    RSI 14
+                </div>
+
+                <div
+                    id="rsi"
+                    class="value">
+
+                    —
+
+                </div>
+            </div>
+
+
+            <div class="market-box">
+                <div class="label">
+                    Trend
+                </div>
+
+                <div
+                    id="trend"
+                    class="value">
+
+                    —
+
+                </div>
+            </div>
+
+
+            <div class="market-box">
+                <div class="label">
+                    Strength
+                </div>
+
+                <div
+                    id="strength"
+                    class="value">
+
+                    —
+
+                </div>
+            </div>
+
+
+            <div class="market-box">
+                <div class="label">
+                    EMA 20
+                </div>
+
+                <div
+                    id="ema20"
+                    class="value">
+
+                    —
+
+                </div>
+            </div>
+
+
+            <div class="market-box">
+                <div class="label">
+                    EMA 50
+                </div>
+
+                <div
+                    id="ema50"
+                    class="value">
+
+                    —
+
+                </div>
+            </div>
+
+
+            <div class="market-box">
+                <div class="label">
+                    EMA 200
+                </div>
+
+                <div
+                    id="ema200"
+                    class="value">
+
+                    —
+
+                </div>
+            </div>
+
+
+            <div class="market-box">
+                <div class="label">
+                    Market
+                </div>
+
+                <div
+                    id="marketStatus"
+                    class="value">
+
+                    —
+
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="section">
+
+        <div class="section-title">
+            BOLLINGER <span>BANDS</span>
+        </div>
+
+
+        <div class="bb-grid">
+
+            <div class="bb-box">
+
+                <div class="bb-label">
+                    Upper Band
+                </div>
+
+                <div
+                    id="bbUpper"
+                    class="bb-value">
+
+                    —
+
+                </div>
+
+            </div>
+
+
+            <div class="bb-box">
+
+                <div class="bb-label">
+                    Middle Band
+                </div>
+
+                <div
+                    id="bbMiddle"
+                    class="bb-value">
+
+                    —
+
+                </div>
+
+            </div>
+
+
+            <div class="bb-box">
+
+                <div class="bb-label">
+                    Lower Band
+                </div>
+
+                <div
+                    id="bbLower"
+                    class="bb-value">
+
+                    —
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="section">
+
+        <div class="section-title">
+            SUPPORT &amp; <span>RESISTANCE</span>
+        </div>
+
+
+        <div class="bb-grid">
+
+            <div class="bb-box">
+
+                <div class="bb-label">
+                    Nearest Support
+                </div>
+
+                <div
+                    id="support"
+                    class="bb-value">
+
+                    —
+
+                </div>
+
+            </div>
+
+
+            <div class="bb-box">
+
+                <div class="bb-label">
+                    Nearest Resistance
+                </div>
+
+                <div
+                    id="resistance"
+                    class="bb-value">
+
+                    —
+
+                </div>
+
+            </div>
+
+
+            <div class="bb-box">
+
+                <div class="bb-label">
+                    S/R Position
+                </div>
+
+                <div
+                    id="srPosition"
+                    class="bb-value">
+
+                    —
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="section">
+
+        <div class="section-title">
+            RUNNING <span>CANDLE</span>
+        </div>
+
+
+        <div class="candle-box">
+
+            <div
+                id="candleStatus"
+                class="candle-status">
+
+                Waiting for scan
+
+            </div>
+
+
+            <div class="ohlc-grid">
+
+                <div class="ohlc-item">
+
+                    <small>OPEN</small>
+
+                    <strong
+                        id="candleOpen">
+
+                        —
+
+                    </strong>
+
+                </div>
+
+
+                <div class="ohlc-item">
+
+                    <small>HIGH</small>
+
+                    <strong
+                        id="candleHigh">
+
+                        —
+
+                    </strong>
+
+                </div>
+
+
+                <div class="ohlc-item">
+
+                    <small>LOW</small>
+
+                    <strong
+                        id="candleLow">
+
+                        —
+
+                    </strong>
+
+                </div>
+
+
+                <div class="ohlc-item">
+
+                    <small>CLOSE</small>
+
+                    <strong
+                        id="candleClose">
+
+                        —
+
+                    </strong>
+
+                </div>
+
+
+                <div class="ohlc-item">
+
+                    <small>CHANGE</small>
+
+                    <strong
+                        id="candleChange">
+
+                        —
+
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="section">
+
+        <div class="section-title">
+            AI <span>ANALYSIS REASONS</span>
+        </div>
+
+
+        <div class="reason-grid">
+
+            <div class="reason-box">
+
+                <h3>📈 Bullish Factors</h3>
+
+                <ul id="bullishReasons">
+
+                    <li>
+                        No scan performed yet.
+                    </li>
+
+                </ul>
+
+            </div>
+
+
+            <div class="reason-box">
+
+                <h3>📉 Bearish Factors</h3>
+
+                <ul id="bearishReasons">
+
+                    <li>
+                        No scan performed yet.
+                    </li>
+
+                </ul>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="section">
+
+        <div class="empty-state">
+
+            <div class="icon">
+                🤖
+            </div>
+
+            <h3>
+                AI SIGNAL PRO
+            </h3>
+
+            <p>
+                Select REAL or OTC market,
+                choose an asset and timeframe,
+                then press <b>SCAN CHART</b>.
+                The system will request the latest
+                available market data and display
+                the analysis.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <footer>
+
+        AI SIGNAL PRO &copy; 2026<br>
+
+        This tool provides technical analysis only
+        and does not guarantee trading results.
+
+    </footer>
+
+</div>
+
+
+<script>
+
+    /* =========================================================
+       FLASK DATA
+    ========================================================= */
+
+    const REAL_PAIRS =
+        {{ real_pairs | tojson }};
+
+    const OTC_PAIRS =
+        {{ otc_pairs | tojson }};
+
+
+    /* =========================================================
+       DOM
+    ========================================================= */
+
+    const marketType =
+        document.getElementById("marketType");
+
+    const symbol =
+        document.getElementById("symbol");
+
+    const timeframe =
+        document.getElementById("timeframe");
+
+    const scanBtn =
+        document.getElementById("scanBtn");
+
+    const statusDot =
+        document.getElementById("statusDot");
+
+    const statusText =
+        document.getElementById("statusText");
+
+    const lastUpdate =
+        document.getElementById("lastUpdate");
+
+    const loading =
+        document.getElementById("loading");
+
+    const signalMain =
+        document.getElementById("signalMain");
+
+    const signalSub =
+        document.getElementById("signalSub");
+
+    const metaSymbol =
+        document.getElementById("metaSymbol");
+
+    const metaTimeframe =
+        document.getElementById("metaTimeframe");
+
+    const metaConfidence =
+        document.getElementById("metaConfidence");
+
+    const timerText =
+        document.getElementById("timerText");
+
+    const progressBar =
+        document.getElementById("progressBar");
+
+    const price =
+        document.getElementById("price");
+
+    const rsi =
+        document.getElementById("rsi");
+
+    const trend =
+        document.getElementById("trend");
+
+    const strength =
+        document.getElementById("strength");
+
+    const ema20 =
+        document.getElementById("ema20");
+
+    const ema50 =
+        document.getElementById("ema50");
+
+    const ema200 =
+        document.getElementById("ema200");
+
+    const marketStatus =
+        document.getElementById("marketStatus");
+
+    const bbUpper =
+        document.getElementById("bbUpper");
+
+    const bbMiddle =
+        document.getElementById("bbMiddle");
+
+    const bbLower =
+        document.getElementById("bbLower");
+
+    const support =
+        document.getElementById("support");
+
+    const resistance =
+        document.getElementById("resistance");
+
+    const srPosition =
+        document.getElementById("srPosition");
+
+    const candleStatus =
+        document.getElementById("candleStatus");
+
+    const candleOpen =
+        document.getElementById("candleOpen");
+
+    const candleHigh =
+        document.getElementById("candleHigh");
+
+    const candleLow =
+        document.getElementById("candleLow");
+
+    const candleClose =
+        document.getElementById("candleClose");
+
+    const candleChange =
+        document.getElementById("candleChange");
+
+    const bullishReasons =
+        document.getElementById("bullishReasons");
+
+    const bearishReasons =
+        document.getElementById("bearishReasons");
+
+
+    /* =========================================================
+       RESET
+    ========================================================= */
+
+    function resetResults() {
+
+        signalMain.textContent =
+            "READY";
+
+        signalMain.className =
+            "signal-main wait";
+
+        signalSub.textContent =
+            "Select an asset and press SCAN CHART";
+
+        metaSymbol.textContent =
+            "—";
+
+        metaTimeframe.textContent =
+            "—";
+
+        metaConfidence.textContent =
+            "—";
+
+        price.textContent =
+            "—";
+
+        rsi.textContent =
+            "—";
+
+        trend.textContent =
+            "—";
+
+        strength.textContent =
+            "—";
+
+        ema20.textContent =
+            "—";
+
+        ema50.textContent =
+            "—";
+
+        ema200.textContent =
+            "—";
+
+        marketStatus.textContent =
+            "—";
+
+        bbUpper.textContent =
+            "—";
+
+        bbMiddle.textContent =
+            "—";
+
+        bbLower.textContent =
+            "—";
+
+        support.textContent =
+            "—";
+
+        resistance.textContent =
+            "—";
+
+        srPosition.textContent =
+            "—";
+
+        candleStatus.textContent =
+            "Waiting for scan";
+
+        candleOpen.textContent =
+            "—";
+
+        candleHigh.textContent =
+            "—";
+
+        candleLow.textContent =
+            "—";
+
+        candleClose.textContent =
+            "—";
+
+        candleChange.textContent =
+            "—";
+
+        bullishReasons.innerHTML =
+            "<li>No scan performed yet.</li>";
+
+        bearishReasons.innerHTML =
+            "<li>No scan performed yet.</li>";
+
+        timerText.textContent =
+            "No active scan";
+
+        progressBar.style.width =
+            "0%";
+    }
+
+
+    /* =========================================================
+       STATUS
+    ========================================================= */
+
+    function setStatus(type, message) {
+
+        statusDot.className =
+            "dot";
+
+        if (type === "online") {
+
+            statusDot.classList.add(
+                "online"
+            );
+
+        }
+
+        if (type === "error") {
+
+            statusDot.classList.add(
+                "error"
+            );
+
+        }
+
+        statusText.textContent =
+            message;
+    }
+
+
+    /* =========================================================
+       FORMAT
+    ========================================================= */
+
+    function formatNumber(value) {
+
+        if (
+            value === null ||
+            value === undefined ||
+            value === "" ||
+            Number.isNaN(Number(value))
+        ) {
+
+            return "—";
+        }
+
+        const number =
+            Number(value);
+
+        if (Math.abs(number) >= 100) {
+
+            return number.toFixed(4);
+        }
+
+        if (Math.abs(number) >= 1) {
+
+            return number.toFixed(5);
+        }
+
+        return number.toFixed(8);
+    }
+
+
+    function valueOrDash(value) {
+
+        if (
+            value === null ||
+            value === undefined ||
+            value === ""
+        ) {
+
+            return "—";
+        }
+
+        return String(value);
+    }
+
+
+    /* =========================================================
+       ASSET LIST
+    ========================================================= */
+
+    function updateAssetList() {
+
+        const isOTC =
+            marketType.value === "otc";
+
+        const pairs =
+            isOTC
+                ? OTC_PAIRS
+                : REAL_PAIRS;
+
+        symbol.innerHTML =
+            "";
+
+        if (
+            !pairs ||
+            pairs.length === 0
+        ) {
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+            option.value =
+                "";
+
+            option.textContent =
+                "NO ASSETS";
+
+            symbol.appendChild(
+                option
+            );
+
+            return;
+        }
+
+        pairs.forEach(
+            function(pair) {
+
+                const option =
+                    document.createElement(
+                        "option"
+                    );
+
+                option.value =
+                    pair;
+
+                option.textContent =
+                    pair;
+
+                symbol.appendChild(
+                    option
+                );
+            }
+        );
+    }
+
+
+    /* =========================================================
+       SIGNAL CLASS
+    ========================================================= */
+
+    function signalClass(signal) {
+
+        const text =
+            String(signal || "")
+                .toUpperCase();
+
+        if (
+            text.includes("CALL") ||
+            text.includes("UP") ||
+            text.includes("BUY")
+        ) {
+
+            return "signal-main call";
+        }
+
+        if (
+            text.includes("PUT") ||
+            text.includes("DOWN") ||
+            text.includes("SELL")
+        ) {
+
+            return "signal-main put";
+        }
+
+        if (
+            text.includes("MARKET NOT DETECTED") ||
+            text.includes("NOT DETECTED")
+        ) {
+
+            return "signal-main detected";
+        }
+
+        return "signal-main wait";
+    }
+
+
+    /* =========================================================
+       REASONS
+    ========================================================= */
+
+    function normalizeReasons(value) {
+
+        if (!value) {
+
+            return [];
+        }
+
+        if (Array.isArray(value)) {
+
+            return value;
+        }
+
+        return [
+            String(value)
+        ];
+    }
+
+
+    function renderReasons(
+        element,
+        reasons
+    ) {
+
+        const list =
+            normalizeReasons(
+                reasons
+            );
+
+        if (list.length === 0) {
+
+            element.innerHTML =
+                "<li>No strong factor detected.</li>";
+
+            return;
+        }
+
+        element.innerHTML =
+            "";
+
+        list.forEach(
+            function(reason) {
+
+                const li =
+                    document.createElement(
+                        "li"
+                    );
+
+                li.textContent =
+                    reason;
+
+                element.appendChild(
+                    li
+                );
+            }
+        );
+    }
+
+
+    /* =========================================================
+       RENDER RESPONSE
+    ========================================================= */
+
+    function renderSignal(data) {
+
+        if (!data) {
+
+            throw new Error(
+                "Empty server response"
+            );
+        }
+
+
+        const signal =
+            data.signal ||
+            data.direction ||
+            "NO TRADE";
+
+
+        signalMain.textContent =
+            signal;
+
+        signalMain.className =
+            signalClass(signal);
+
+
+        const selectedSymbol =
+            data.symbol ||
+            data.pair ||
+            symbol.value;
+
+
+        const selectedTimeframe =
+            data.timeframe ||
+            timeframe.value;
+
+
+        metaSymbol.textContent =
+            valueOrDash(
+                selectedSymbol
+            );
+
+
+        metaTimeframe.textContent =
+            valueOrDash(
+                selectedTimeframe
+            ) + " MIN";
+
+
+        /* CONFIDENCE */
+
+        let confidence =
+            data.confidence;
+
+
+        if (
+            confidence !== null &&
+            confidence !== undefined &&
+            confidence !== ""
+        ) {
+
+            confidence =
+                Number(confidence);
+
+            if (
+                confidence <= 1
+            ) {
+
+                confidence *= 100;
+            }
+
+            metaConfidence.textContent =
+                confidence.toFixed(1) + "%";
+
+        } else {
+
+            metaConfidence.textContent =
+                "—";
+        }
+
+
+        /* MESSAGE */
+
+        if (data.message) {
+
+            signalSub.textContent =
+                data.message;
+
+        } else if (data.reason) {
+
+            signalSub.textContent =
+                data.reason;
+
+        } else if (
+            String(signal)
+                .toUpperCase()
+                .includes(
+                    "MARKET NOT DETECTED"
+                )
+        ) {
+
+            signalSub.textContent =
+                "No live market data detected. No signal generated.";
+
+        } else {
+
+            signalSub.textContent =
+                "Analysis completed.";
+        }
+
+
+        /* PRICE */
+
+        price.textContent =
+            formatNumber(
+                data.price ??
+                data.current_price ??
+                data.currentPrice
+            );
+
+
+        /* RSI */
+
+        rsi.textContent =
+            formatNumber(
+                data.rsi ??
+                data.RSI
+            );
+
+
+        /* TREND */
+
+        trend.textContent =
+            valueOrDash(
+                data.trend ??
+                data.direction_trend
+            );
+
+
+        /* STRENGTH */
+
+        let strengthValue =
+            data.strength ??
+            data.market_strength;
+
+
+        if (
+            strengthValue !== null &&
+            strengthValue !== undefined &&
+            strengthValue !== ""
+        ) {
+
+            strengthValue =
+                Number(strengthValue);
+
+            if (
+                strengthValue <= 1
+            ) {
+
+                strengthValue *= 100;
+            }
+
+            strength.textContent =
+                strengthValue.toFixed(1) + "%";
+
+        } else {
+
+            strength.textContent =
+                "—";
+        }
+
+
+        /* EMA */
+
+        ema20.textContent =
+            formatNumber(
+                data.ema20 ??
+                data.EMA20
+            );
+
+        ema50.textContent =
+            formatNumber(
+                data.ema50 ??
+                data.EMA50
+            );
+
+        ema200.textContent =
+            formatNumber(
+                data.ema200 ??
+                data.EMA200
+            );
+
+
+        /* MARKET */
+
+        if (
+            data.market_open === false
+        ) {
+
+            marketStatus.textContent =
+                "CLOSED";
+
+        } else if (
+            data.market_open === true
+        ) {
+
+            marketStatus.textContent =
+                "OPEN";
+
+        } else if (
+            String(signal)
+                .toUpperCase()
+                .includes(
+                    "MARKET NOT DETECTED"
+                )
+        ) {
+
+            marketStatus.textContent =
+                "NOT DETECTED";
+
+        } else {
+
+            marketStatus.textContent =
+                valueOrDash(
+                    data.market_status ||
+                    data.marketStatus
+                );
+        }
+
+
+        /* BOLLINGER */
+
+        const bb =
+            data.bollinger ||
+            data.bb ||
+            {};
+
+
+        bbUpper.textContent =
+            formatNumber(
+                data.bb_upper ??
+                data.bollinger_upper ??
+                bb.upper
+            );
+
+
+        bbMiddle.textContent =
+            formatNumber(
+                data.bb_middle ??
+                data.bollinger_middle ??
+                bb.middle
+            );
+
+
+        bbLower.textContent =
+            formatNumber(
+                data.bb_lower ??
+                data.bollinger_lower ??
+                bb.lower
+            );
+
+
+        /* SUPPORT */
+
+        support.textContent =
+            formatNumber(
+                data.support ??
+                data.nearest_support
+            );
+
+
+        /* RESISTANCE */
+
+        resistance.textContent =
+            formatNumber(
+                data.resistance ??
+                data.nearest_resistance
+            );
+
+
+        /* S/R */
+
+        srPosition.textContent =
+            valueOrDash(
+                data.sr_position ??
+                data.srPosition
+            );
+
+
+        /* CANDLE */
+
+        const candle =
+            data.running_candle ||
+            data.candle ||
+            {};
+
+
+        candleOpen.textContent =
+            formatNumber(
+                data.open ??
+                candle.open
+            );
+
+
+        candleHigh.textContent =
+            formatNumber(
+                data.high ??
+                candle.high
+            );
+
+
+        candleLow.textContent =
+            formatNumber(
+                data.low ??
+                candle.low
+            );
+
+
+        candleClose.textContent =
+            formatNumber(
+                data.close ??
+                candle.close
+            );
+
+
+        let change =
+            data.change ??
+            data.candle_change ??
+            candle.change;
+
+
+        if (
+            change !== null &&
+            change !== undefined &&
+            change !== ""
+        ) {
+
+            candleChange.textContent =
+                Number(change)
+                    .toFixed(5);
+
+        } else {
+
+            candleChange.textContent =
+                "—";
+        }
+
+
+        if (
+            data.candle_status
+        ) {
+
+            candleStatus.textContent =
+                data.candle_status;
+
+        } else if (
+            data.running_candle === true
+        ) {
+
+            candleStatus.textContent =
+                "LIVE RUNNING CANDLE";
+
+        } else {
+
+            candleStatus.textContent =
+                "CURRENT CANDLE";
+        }
+
+
+        /* REASONS */
+
+        renderReasons(
+            bullishReasons,
+            data.bullish_reasons ??
+            data.bullish ??
+            data.bullishFactors
+        );
+
+
+        renderReasons(
+            bearishReasons,
+            data.bearish_reasons ??
+            data.bearish ??
+            data.bearishFactors
+        );
+
+
+        /* PROGRESS */
+
+        updateProgress(
+            data
+        );
+
+
+        lastUpdate.textContent =
+            "Last scan: " +
+            new Date()
+                .toLocaleTimeString();
+    }
+
+
+    /* =========================================================
+       PROGRESS
+    ========================================================= */
+
+    function updateProgress(data) {
+
+        let seconds =
+            data.seconds_into_candle ??
+            data.elapsed_seconds;
+
+
+        let total =
+            data.candle_seconds ??
+            data.interval_seconds;
+
+
+        if (
+            seconds === null ||
+            seconds === undefined
+        ) {
+
+            progressBar.style.width =
+                "0%";
+
+            timerText.textContent =
+                "Current running candle";
+
+            return;
+        }
+
+
+        seconds =
+            Number(seconds);
+
+
+        total =
+            Number(total || 60);
+
+
+        if (total <= 0) {
+
+            total = 60;
+        }
+
+
+        let percent =
+            (
+                seconds /
+                total
+            ) * 100;
+
+
+        percent =
+            Math.max(
+                0,
+                Math.min(
+                    100,
+                    percent
+                )
+            );
+
+
+        progressBar.style.width =
+            percent + "%";
+
+
+        timerText.textContent =
+            "Candle progress: " +
+            Math.floor(seconds) +
+            " / " +
+            Math.floor(total) +
+            " seconds";
+    }
+
+
+    /* =========================================================
+       SCAN
+    ========================================================= */
+
+    async function scanChart() {
+
+        const selectedSymbol =
+            symbol.value;
+
+
+        const selectedTimeframe =
+            timeframe.value;
+
+
+        if (!selectedSymbol) {
+
+            setStatus(
+                "error",
+                "NO ASSET SELECTED"
+            );
+
+            return;
+        }
+
+
+        scanBtn.disabled =
+            true;
+
+
+        loading.style.display =
+            "block";
+
+
+        setStatus(
+            "",
+            "SCANNING LIVE MARKET..."
+        );
+
+
+        timerText.textContent =
+            "Requesting latest market data...";
+
+
+        progressBar.style.width =
+            "5%";
+
+
+        try {
+
+            const url =
+                "/api/signal" +
+                "?symbol=" +
+                encodeURIComponent(
+                    selectedSymbol
+                ) +
+                "&timeframe=" +
+                encodeURIComponent(
+                    selectedTimeframe
+                );
+
+
+            const response =
+                await fetch(
+                    url,
+                    {
+                        method: "GET",
+                        cache: "no-store",
+                        headers: {
+                            "Accept":
+                                "application/json"
+                        }
+                    }
+                );
+
+
+            let data;
+
+
+            try {
+
+                data =
+                    await response.json();
+
+            } catch (error) {
+
+                throw new Error(
+                    "Server returned invalid JSON"
+                );
+            }
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    data.message ||
+                    data.error ||
+                    "Server error " +
+                    response.status
+                );
+            }
+
+
+            renderSignal(
+                data
+            );
+
+
+            const detectedSignal =
+                String(
+                    data.signal ||
+                    ""
+                ).toUpperCase();
+
+
+            const marketOpen =
+                data.market_open;
+
+
+            if (
+                marketOpen === false ||
+                detectedSignal.includes(
+                    "MARKET NOT DETECTED"
+                )
+            ) {
+
+                setStatus(
+                    "error",
+                    "MARKET NOT DETECTED"
+                );
+
+            } else {
+
+                setStatus(
+                    "online",
+                    "LIVE MARKET DATA RECEIVED"
+                );
+            }
+
+
+        } catch (error) {
+
+            console.error(
+                "SCAN ERROR:",
+                error
+            );
+
+
+            signalMain.textContent =
+                "ERROR";
+
+
+            signalMain.className =
+                "signal-main wait";
+
+
+            signalSub.textContent =
+                error.message ||
+                "Unable to get market data";
+
+
+            setStatus(
+                "error",
+                "SCAN FAILED"
+            );
+
+
+            lastUpdate.textContent =
+                "Request failed";
+
+
+            timerText.textContent =
+                "No active scan";
+
+
+            progressBar.style.width =
+                "0%";
+
+
+        } finally {
+
+            scanBtn.disabled =
+                false;
+
+
+            loading.style.display =
+                "none";
+        }
+    }
+
+
+    /* =========================================================
+       EVENTS
+    ========================================================= */
+
+    marketType.addEventListener(
+        "change",
+        function() {
+
+            updateAssetList();
+
+            resetResults();
+
+            setStatus(
+                "",
+                "READY — PRESS SCAN CHART"
+            );
+
+            lastUpdate.textContent =
+                "No scan yet";
+        }
+    );
+
+
+    symbol.addEventListener(
+        "change",
+        function() {
+
+            resetResults();
+
+            setStatus(
+                "",
+                "READY — PRESS SCAN CHART"
+            );
+        }
+    );
+
+
+    timeframe.addEventListener(
+        "change",
+        function() {
+
+            resetResults();
+
+            setStatus(
+                "",
+                "READY — PRESS SCAN CHART"
+            );
+        }
+    );
+
+
+    scanBtn.addEventListener(
+        "click",
+        scanChart
+    );
+
+
+    document.addEventListener(
+        "keydown",
+        function(event) {
+
+            if (
+                event.key === "Enter" &&
+                !scanBtn.disabled
+            ) {
+
+                scanChart();
+            }
+        }
+    );
+
+
+    /* =========================================================
+       START
+    ========================================================= */
+
+    updateAssetList();
+
+    resetResults();
+
+</script>
+
+</body>
+</html>
