@@ -1,1 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <title>AI SIGNAL PRO</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #07111f;
+            color: #ffffff;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            margin: auto;
+            padding: 15px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px 10px;
+            background: #0d1b2d;
+            border-radius: 16px;
+            margin-bottom: 15px;
+            border: 1px solid #203752;
+        }
+
+        .logo {
+            font-size: 30px;
+            font-weight: 900;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            margin-top: 7px;
+            color: #9fb3c8;
+            font-size: 14px;
+        }
+
+        .card {
+            background: #0d1b2d;
+            border: 1px solid #203752;
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 7px;
+            color: #a9bfd5;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        select,
+        button {
+            width: 100%;
+            min-height: 48px;
+            border-radius: 10px;
+            border: 1px solid #2a4663;
+            background: #081523;
+            color: #ffffff;
+            padding: 10px 12px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        select {
+            margin-bottom: 15px;
+        }
+
+        button {
+            background: #1677ff;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .signal-box {
+            text-align: center;
+            padding: 25px 15px;
+            border-radius: 15px;
+            background: #081523;
+            border: 1px solid #203752;
+        }
+
+        .asset {
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .timeframe {
+            color: #9fb3c8;
+            margin-top: 5px;
+        }
+
+        .signal {
+            font-size: 42px;
+            font-weight: 900;
+            margin: 20px 0 8px;
+        }
+
+        .call {
+            color: #22c55e;
+        }
+
+        .put {
+            color: #ef4444;
+        }
+
+        .wait {
+            color: #facc15;
+        }
+
+        .confidence {
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        .status {
+            color: #9fb3c8;
+            font-size: 14px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .metric {
+            background: #081523;
+            border: 1px solid #203752;
+            border-radius: 12px;
+            padding: 13px;
+        }
+
+        .metric-name {
+            color: #8ea6bd;
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+
+        .metric-value {
+            font-size: 17px;
+            font-weight: bold;
+        }
+
+        .refresh {
+            margin-top: 12px;
+            background: #13263c;
+            border: 1px solid #2a4663;
+        }
+
+        .footer {
+            text-align: center;
+            color: #6f879e;
+            font-size: 12px;
+            padding: 15px;
+        }
+
+        .loading {
+            color: #60a5fa;
+        }
+
+        .error {
+            color: #f87171;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 500px) {
+            .logo {
+                font-size: 25px;
+            }
+
+            .grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .signal {
+                font-size: 34px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <div class="logo">🤖 AI SIGNAL PRO</div>
+        <div class="subtitle">
+            Smart Trading Signal • Real Market + OTC
+        </div>
+    </div>
+
+    <div class="card">
+
+        <label for="marketType">MARKET TYPE</label>
+
+        <select id="marketType" onchange="changeMarket()">
+            <option value="real">REAL MARKET</option>
+            <option value="otc">OTC MARKET</option>
+        </select>
+
+        <label for="pair">ASSET</label>
+
+        <select id="pair"></select>
+
+        <label for="timeframe">TIMEFRAME</label>
+
+        <select id="timeframe">
+            {% for tf in timeframes %}
+                <option value="{{ tf }}">{{ tf }} MIN</option>
+            {% endfor %}
+        </select>
+
+        <button onclick="getSignal()">
+            🔍 ANALYZE MARKET
+        </button>
+
+    </div>
+
+    <div class="card">
+
+        <div id="signalBox" class="signal-box">
+
+            <div class="asset" id="assetName">
+                Select an asset
+            </div>
+
+            <div class="timeframe" id="tfName">
+                Select timeframe
+            </div>
+
+            <div id="signal" class="signal wait">
+                WAITING
+            </div>
+
+            <div class="confidence" id="confidence">
+                Confidence: --
+            </div>
+
+            <div class="status" id="status">
+                Press ANALYZE MARKET
+            </div>
+
+        </div>
+
+        <div class="grid">
+
+            <div class="metric">
+                <div class="metric-name">PRICE</div>
+                <div class="metric-value" id="price">--</div>
+            </div>
+
+            <div class="metric">
+                <div class="metric-name">RSI 14</div>
+                <div class="metric-value" id="rsi">--</div>
+            </div>
+
+            <div class="metric">
+                <div class="metric-name">EMA 20</div>
+                <div class="metric-value" id="ema20">--</div>
+            </div>
+
+            <div class="metric">
+                <div class="metric-name">EMA 50</div>
+                <div class="metric-value" id="ema50">--</div>
+            </div>
+
+            <div class="metric">
+                <div class="metric-name">EMA 200</div>
+                <div class="metric-value" id="ema200">--</div>
+            </div>
+
+            <div class="metric">
+                <div class="metric-name">BOLLINGER</div>
+                <div class="metric-value" id="bollinger">--</div>
+            </div>
+
+            <div class="metric">
+                <div class="metric-name">TREND</div>
+                <div class="metric-value" id="trend">--</div>
+            </div>
+
+            <div class="metric">
+                <div class="metric-name">STRENGTH</div>
+                <div class="metric-value" id="strength">--</div>
+            </div>
+
+            <div class="metric">
+                <div class="metric-name">SUPPORT</div>
+                <div class="metric-value" id="support">--</div>
+            </div>
+
+            <div class="metric">
+                <div class="metric-name">RESISTANCE</div>
+                <div class="metric-value" id="resistance">--</div>
+            </div>
+
+        </div>
+
+        <button class="refresh" onclick="getSignal()">
+            🔄 REFRESH SIGNAL
+        </button>
+
+    </div>
+
+    <div class="footer">
+        AI SIGNAL PRO • Market analysis tool<br>
+        Signals are analytical estimates, not guaranteed trading results.
+    </div>
+
+</div>
+
+
+<script>
+
+    const realPairs = {{ real_pairs | tojson }};
+    const otcPairs = {{ otc_pairs | tojson }};
+
+    const pairSelect = document.getElementById("pair");
+    const marketType = document.getElementById("marketType");
+
+    function changeMarket() {
+
+        pairSelect.innerHTML = "";
+
+        const list =
+            marketType.value === "otc"
+                ? otcPairs
+                : realPairs;
+
+        if (!list || list.length === 0) {
+
+            const option = document.createElement("option");
+            option.value = "";
+            option.textContent = "No assets available";
+
+            pairSelect.appendChild(option);
+            return;
+        }
+
+        list.forEach(function(pair) {
+
+            const option = document.createElement("option");
+
+            option.value = pair;
+            option.textContent = pair;
+
+            pairSelect.appendChild(option);
+
+        });
+
+    }
+
+
+    function numberValue(value) {
+
+        if (
+            value === null ||
+            value === undefined ||
+            value === ""
+        ) {
+            return "--";
+        }
+
+        if (
+            typeof value === "number" &&
+            Number.isFinite(value)
+        ) {
+            return Number(value).toFixed(5);
+        }
+
+        return value;
+    }
+
+
+    function findValue(data, names) {
+
+        for (const name of names) {
+
+            if (
+                data &&
+                data[name] !== undefined &&
+                data[name] !== null
+            ) {
+                return data[name];
+            }
+
+        }
+
+        return null;
+    }
+
+
+    function showError(message) {
+
+        document.getElementById("signal").textContent = "ERROR";
+        document.getElementById("signal").className = "signal put";
+
+        document.getElementById("confidence").textContent =
+            "Confidence: --";
+
+        document.getElementById("status").innerHTML =
+            '<span class="error">' + message + '</span>';
+    }
+
+
+    async function getSignal() {
+
+        const pair = pairSelect.value;
+        const timeframe =
+            document.getElementById("timeframe").value;
+
+        if (!pair) {
+
+            showError("Please select an asset.");
+
+            return;
+        }
+
+        document.getElementById("assetName").textContent =
+            pair;
+
+        document.getElementById("tfName").textContent =
+            timeframe + " MIN";
+
+        document.getElementById("signal").textContent =
+            "ANALYZING...";
+
+        document.getElementById("signal").className =
+            "signal loading";
+
+        document.getElementById("confidence").textContent =
+            "Confidence: --";
+
+        document.getElementById("status").textContent =
+            "Getting latest market data...";
+
+
+        try {
+
+            const url =
+                "/api/signal?pair=" +
+                encodeURIComponent(pair) +
+                "&timeframe=" +
+                encodeURIComponent(timeframe);
+
+
+            const response =
+                await fetch(
+                    url,
+                    {
+                        method: "GET",
+                        cache: "no-store"
+                    }
+                );
+
+
+            const data = await response.json();
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    data.error ||
+                    data.message ||
+                    "Server returned an error."
+                );
+
+            }
+
+
+            if (data.error) {
+
+                throw new Error(data.error);
+
+            }
+
+
+            updateSignal(data);
+
+        }
+
+        catch (error) {
+
+            console.error(error);
+
+            showError(
+                error.message ||
+                "Unable to get market signal."
+            );
+
+        }
+
+    }
+
+
+    function updateSignal(data) {
+
+        const signalValue =
+            String(
+                findValue(
+                    data,
+                    [
+                        "signal",
+                        "direction",
+                        "action",
+                        "prediction"
+                    ]
+                ) || "WAIT"
+            ).toUpperCase();
+
+
+        const confidence =
+            findValue(
+                data,
+                [
+                    "confidence",
+                    "confidence_score",
+                    "score"
+                ]
+            );
+
+
+        const price =
+            findValue(
+                data,
+                [
+                    "price",
+                    "current_price",
+                    "close"
+                ]
+            );
+
+
+        const rsi =
+            findValue(
+                data,
+                [
+                    "rsi",
+                    "rsi14"
+                ]
+            );
+
+
+        const ema20 =
+            findValue(
+                data,
+                [
+                    "ema20",
+                    "ema_20"
+                ]
+            );
+
+
+        const ema50 =
+            findValue(
+                data,
+                [
+                    "ema50",
+                    "ema_50"
+                ]
+            );
+
+
+        const ema200 =
+            findValue(
+                data,
+                [
+                    "ema200",
+                    "ema_200"
+                ]
+            );
+
+
+        const trend =
+            findValue(
+                data,
+                [
+                    "trend",
+                    "market_trend",
+                    "direction"
+                ]
+            );
+
+
+        const strength =
+            findValue(
+                data,
+                [
+                    "strength",
+                    "trend_strength"
+                ]
+            );
+
+
+        const support =
+            findValue(
+                data,
+                [
+                    "support",
+                    "support_level"
+                ]
+            );
+
+
+        const resistance =
+            findValue(
+                data,
+                [
+                    "resistance",
+                    "resistance_level"
+                ]
+            );
+
+
+        const bollinger =
+            findValue(
+                data,
+                [
+                    "bollinger",
+                    "bb_position",
+                    "bollinger_position"
+                ]
+            );
+
+
+        document.getElementById("signal").textContent =
+            signalValue;
+
+
+        const signalElement =
+            document.getElementById("signal");
+
+
+        signalElement.className =
+            "signal";
+
+
+        if (
+            signalValue.includes("CALL") ||
+            signalValue.includes("UP") ||
+            signalValue.includes("BUY")
+        ) {
+
+            signalElement.classList.add("call");
+
+        }
+
+        else if (
+            signalValue.includes("PUT") ||
+            signalValue.includes("DOWN") ||
+            signalValue.includes("SELL")
+        ) {
+
+            signalElement.classList.add("put");
+
+        }
+
+        else {
+
+            signalElement.classList.add("wait");
+
+        }
+
+
+        let confidenceText = "--";
+
+        if (
+            confidence !== null &&
+            confidence !== undefined
+        ) {
+
+            confidenceText =
+                String(confidence);
+
+            if (
+                !confidenceText.includes("%")
+            ) {
+
+                confidenceText += "%";
+
+            }
+
+        }
+
+
+        document.getElementById("confidence").textContent =
+            "Confidence: " + confidenceText;
+
+
+        document.getElementById("price").textContent =
+            numberValue(price);
+
+
+        document.getElementById("rsi").textContent =
+            numberValue(rsi);
+
+
+        document.getElementById("ema20").textContent =
+            numberValue(ema20);
+
+
+        document.getElementById("ema50").textContent =
+            numberValue(ema50);
+
+
+        document.getElementById("ema200").textContent =
+            numberValue(ema200);
+
+
+        document.getElementById("bollinger").textContent =
+            bollinger !== null
+                ? bollinger
+                : "--";
+
+
+        document.getElementById("trend").textContent =
+            trend !== null
+                ? trend
+                : "--";
+
+
+        document.getElementById("strength").textContent =
+            strength !== null
+                ? String(strength) +
+                  (
+                    String(strength).includes("%")
+                        ? ""
+                        : "%"
+                  )
+                : "--";
+
+
+        document.getElementById("support").textContent =
+            numberValue(support);
+
+
+        document.getElementById("resistance").textContent =
+            numberValue(resistance);
+
+
+        const candle =
+            findValue(
+                data,
+                [
+                    "candle_status",
+                    "candle",
+                    "current_candle",
+                    "status"
+                ]
+            );
+
+
+        document.getElementById("status").textContent =
+            candle !== null
+                ? candle
+                : "Live market analysis updated.";
+
+
+        document.getElementById("assetName").textContent =
+            findValue(
+                data,
+                [
+                    "pair",
+                    "symbol",
+                    "asset"
+                ]
+            ) || pairSelect.value;
+
+
+        document.getElementById("tfName").textContent =
+            (
+                findValue(
+                    data,
+                    [
+                        "timeframe",
+                        "interval"
+                    ]
+                ) || document.getElementById("timeframe").value
+            ) + " MIN";
+
+    }
+
+
+    changeMarket();
+
+
+    setInterval(
+        function() {
+
+            if (
+                pairSelect.value
+            ) {
+
+                getSignal();
+
+            }
+
+        },
+        15000
+    );
+
+</script>
+
+</body>
+</html>
