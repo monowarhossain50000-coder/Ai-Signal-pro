@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,1667 +7,282 @@
     <title>AI SIGNAL PRO</title>
 
     <style>
-
         * {
             box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         body {
-            margin: 0;
-            padding: 0;
-            font-family: Arial, Helvetica, sans-serif;
-            background: #07111f;
+            background:
+                radial-gradient(circle at top, #172554 0%, #080d18 42%, #03060b 100%);
             color: #ffffff;
+            font-family: Arial, Helvetica, sans-serif;
+            min-height: 100vh;
+            padding: 15px;
         }
 
         .container {
             width: 100%;
-            max-width: 950px;
+            max-width: 1100px;
             margin: auto;
-            padding: 12px;
         }
 
         .header {
             text-align: center;
-            padding: 20px 10px;
-            background: #0d1b2d;
-            border-radius: 16px;
-            margin-bottom: 14px;
-            border: 1px solid #203752;
+            padding: 18px 10px 20px;
         }
 
-        .logo {
-            font-size: 29px;
+        .header h1 {
+            font-size: 28px;
             font-weight: 900;
             letter-spacing: 2px;
         }
 
-        .subtitle {
+        .header h1 span {
+            color: #00e5ff;
+        }
+
+        .header p {
+            color: #8fa4bd;
             margin-top: 7px;
-            color: #9fb3c8;
             font-size: 13px;
         }
 
-        .live-dot {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            background: #22c55e;
-            border-radius: 50%;
-            margin-right: 5px;
+        /* ================================
+           CONTROL PANEL
+        ================================= */
+
+        .control-panel {
+            background: rgba(12, 20, 34, 0.95);
+            border: 1px solid #20334d;
+            border-radius: 18px;
+            padding: 18px;
+            margin-bottom: 15px;
+            box-shadow: 0 15px 40px rgba(0,0,0,.35);
         }
 
-        .card {
-            background: #0d1b2d;
-            border: 1px solid #203752;
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 14px;
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 12px;
+            align-items: end;
         }
 
-        label {
+        .control-group label {
             display: block;
-            margin-bottom: 6px;
-            color: #a9bfd5;
-            font-size: 13px;
-            font-weight: bold;
-        }
-
-        select,
-        button {
-            width: 100%;
-            min-height: 48px;
-            border-radius: 10px;
-            border: 1px solid #2a4663;
-            background: #081523;
-            color: #ffffff;
-            padding: 10px 12px;
-            font-size: 16px;
-            outline: none;
+            color: #91a4bb;
+            font-size: 12px;
+            margin-bottom: 7px;
+            font-weight: 700;
         }
 
         select {
-            margin-bottom: 13px;
+            width: 100%;
+            height: 46px;
+            background: #0b1322;
+            border: 1px solid #29415f;
+            color: #ffffff;
+            border-radius: 10px;
+            padding: 0 12px;
+            outline: none;
+            font-size: 14px;
         }
 
-        button {
-            background: #1677ff;
-            border: none;
-            font-weight: bold;
+        select:focus {
+            border-color: #00d9ff;
+        }
+
+        .scan-btn {
+            height: 46px;
+            min-width: 145px;
+            border: 0;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #00d9ff, #0077ff);
+            color: #ffffff;
+            font-weight: 900;
+            font-size: 14px;
             cursor: pointer;
+            transition: .2s;
+            box-shadow: 0 8px 25px rgba(0, 174, 255, .25);
         }
 
-        button:active {
-            transform: scale(.98);
+        .scan-btn:hover {
+            transform: translateY(-1px);
         }
 
-        .scanner-status {
+        .scan-btn:disabled {
+            opacity: .55;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ================================
+           STATUS
+        ================================= */
+
+        .status-bar {
+            margin-top: 13px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .connection {
+            display: flex;
+            align-items: center;
             gap: 8px;
-            margin-bottom: 12px;
-            color: #9fb3c8;
+            color: #8fa4bd;
             font-size: 12px;
         }
 
-        .live {
-            color: #22c55e;
-            font-weight: bold;
+        .dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: #64748b;
         }
 
-        .signal-box {
+        .dot.online {
+            background: #00e676;
+            box-shadow: 0 0 10px rgba(0,230,118,.7);
+        }
+
+        .dot.error {
+            background: #ff3b30;
+            box-shadow: 0 0 10px rgba(255,59,48,.7);
+        }
+
+        .last-update {
+            color: #64748b;
+            font-size: 11px;
+        }
+
+        /* ================================
+           SIGNAL CARD
+        ================================= */
+
+        .signal-card {
+            background: rgba(8, 16, 28, .97);
+            border: 1px solid #20334d;
+            border-radius: 20px;
+            padding: 22px;
+            margin-bottom: 15px;
             text-align: center;
-            padding: 24px 12px;
-            border-radius: 15px;
-            background: #081523;
-            border: 1px solid #203752;
+            box-shadow: 0 15px 45px rgba(0,0,0,.4);
         }
 
-        .asset {
-            font-size: 23px;
-            font-weight: bold;
+        .signal-title {
+            color: #91a4bb;
+            font-size: 12px;
+            letter-spacing: 1.5px;
+            font-weight: 700;
         }
 
-        .timeframe {
-            color: #9fb3c8;
+        .signal-main {
+            font-size: 42px;
+            font-weight: 1000;
+            margin-top: 8px;
+            line-height: 1.1;
+        }
+
+        .signal-main.call {
+            color: #00e676;
+            text-shadow: 0 0 20px rgba(0,230,118,.25);
+        }
+
+        .signal-main.put {
+            color: #ff5252;
+            text-shadow: 0 0 20px rgba(255,82,82,.25);
+        }
+
+        .signal-main.wait {
+            color: #ffc107;
+        }
+
+        .signal-main.detected {
+            color: #ff9800;
+            font-size: 30px;
+        }
+
+        .signal-sub {
+            color: #8195ab;
+            font-size: 13px;
+            margin-top: 7px;
+        }
+
+        .signal-meta {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .meta-box {
+            background: #0b1422;
+            border: 1px solid #1e3047;
+            border-radius: 12px;
+            padding: 12px;
+        }
+
+        .meta-label {
+            color: #71859d;
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+
+        .meta-value {
             margin-top: 5px;
+            font-size: 16px;
+            font-weight: 800;
         }
 
-        .signal {
-            font-size: 43px;
-            font-weight: 900;
-            margin: 18px 0 6px;
-            letter-spacing: 1px;
+        /* ================================
+           TIMER
+        ================================= */
+
+        .timer-box {
+            margin-top: 18px;
+            background: #0b1422;
+            border: 1px solid #1e3047;
+            border-radius: 12px;
+            padding: 13px;
         }
 
-        .call {
-            color: #22c55e;
-        }
-
-        .put {
-            color: #ef4444;
-        }
-
-        .wait {
-            color: #facc15;
-        }
-
-        .confidence {
-            font-size: 20px;
-            font-weight: bold;
+        .timer-text {
+            color: #91a4bd;
+            font-size: 12px;
             margin-bottom: 8px;
         }
 
-        .status {
-            color: #9fb3c8;
-            font-size: 13px;
-            line-height: 1.5;
-        }
-
-        .timer {
-            margin-top: 10px;
-            font-size: 13px;
-            color: #60a5fa;
-        }
-
         .progress {
-            height: 6px;
-            background: #17283b;
-            border-radius: 20px;
-            margin-top: 8px;
+            width: 100%;
+            height: 7px;
+            background: #172335;
+            border-radius: 10px;
             overflow: hidden;
         }
 
         .progress-bar {
             height: 100%;
             width: 0%;
-            background: #1677ff;
-            transition: width .3s ease;
+            background: linear-gradient(90deg, #00e5ff, #0077ff);
+            transition: width .5s linear;
+        }
+
+        /* ================================
+           SECTION
+        ================================= */
+
+        .section {
+            background: rgba(8, 16, 28, .97);
+            border: 1px solid #20334d;
+            border-radius: 18px;
+            padding: 18px;
+            margin-bottom: 15px;
         }
 
         .section-title {
-            font-size: 15px;
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #dbeafe;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 9px;
-            margin-top: 14px;
-        }
-
-        .metric {
-            background: #081523;
-            border: 1px solid #203752;
-            border-radius: 12px;
-            padding: 12px;
-            min-width: 0;
-        }
-
-        .metric-name {
-            color: #8ea6bd;
-            font-size: 11px;
-            margin-bottom: 6px;
-        }
-
-        .metric-value {
-            font-size: 16px;
-            font-weight: bold;
-            word-break: break-word;
-        }
-
-        .scanner-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 9px;
-            margin-top: 12px;
-        }
-
-        .reason-box {
-            background: #081523;
-            border: 1px solid #203752;
-            border-radius: 12px;
-            padding: 12px;
-        }
-
-        .reason-title {
-            color: #8ea6bd;
-            font-size: 11px;
-            margin-bottom: 8px;
-            font-weight: bold;
-        }
-
-        .reason {
-            font-size: 13px;
-            margin: 5px 0;
-            line-height: 1.35;
-        }
-
-        .bullish {
-            color: #22c55e;
-        }
-
-        .bearish {
-            color: #ef4444;
-        }
-
-        .candle-box {
-            margin-top: 12px;
-            background: #081523;
-            border: 1px solid #203752;
-            border-radius: 12px;
-            padding: 12px;
-        }
-
-        .candle-row {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 7px;
-        }
-
-        .candle-item {
-            text-align: center;
-        }
-
-        .candle-label {
-            color: #718aa1;
-            font-size: 10px;
-        }
-
-        .candle-value {
-            margin-top: 4px;
-            font-size: 13px;
-            font-weight: bold;
-        }
-
-        .refresh {
-            margin-top: 13px;
-            background: #13263c;
-            border: 1px solid #2a4663;
-        }
-
-        .auto-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-top: 12px;
-            padding: 10px 12px;
-            background: #081523;
-            border-radius: 10px;
-            border: 1px solid #203752;
-        }
-
-        .auto-text {
-            font-size: 13px;
-            color: #a9bfd5;
-        }
-
-        .switch {
-            position: relative;
-            width: 48px;
-            height: 25px;
-        }
-
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            inset: 0;
-            background: #334155;
-            border-radius: 30px;
-            transition: .2s;
-        }
-
-        .slider:before {
-            content: "";
-            position: absolute;
-            width: 19px;
-            height: 19px;
-            left: 3px;
-            top: 3px;
-            background: white;
-            border-radius: 50%;
-            transition: .2s;
-        }
-
-        input:checked + .slider {
-            background: #1677ff;
-        }
-
-        input:checked + .slider:before {
-            transform: translateX(23px);
-        }
-
-        .error {
-            color: #f87171;
-        }
-
-        .footer {
-            text-align: center;
-            color: #6f879e;
-            font-size: 11px;
-            line-height: 1.5;
-            padding: 14px;
-        }
-
-        @media (max-width: 500px) {
-
-            .logo {
-                font-size: 24px;
-            }
-
-            .signal {
-                font-size: 35px;
-            }
-
-            .candle-row {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-        }
-
-    </style>
-
-</head>
-
-
-<body>
-
-<div class="container">
-
-
-    <!-- HEADER -->
-
-    <div class="header">
-
-        <div class="logo">
-            🤖 AI SIGNAL PRO
-        </div>
-
-        <div class="subtitle">
-            <span class="live-dot"></span>
-            Live Chart Scanner • Real Market + OTC
-        </div>
-
-    </div>
-
-
-    <!-- CONTROLS -->
-
-    <div class="card">
-
-        <label>
-            MARKET TYPE
-        </label>
-
-        <select id="marketType"
-                onchange="changeMarket()">
-
-            <option value="real">
-                REAL MARKET
-            </option>
-
-            <option value="otc">
-                OTC MARKET
-            </option>
-
-        </select>
-
-
-        <label>
-            ASSET
-        </label>
-
-        <select id="pair"></select>
-
-
-        <label>
-            TIMEFRAME
-        </label>
-
-        <select id="timeframe">
-
-            {% for tf in timeframes %}
-
-                <option value="{{ tf }}">
-                    {{ tf }} MIN
-                </option>
-
-            {% endfor %}
-
-        </select>
-
-
-        <button onclick="getSignal()">
-            🔍 SCAN CHART
-        </button>
-
-
-        <div class="auto-row">
-
-            <div class="auto-text">
-                🔄 AUTO SCAN
-                <br>
-                <small>
-                    Automatically refresh scanner
-                </small>
-            </div>
-
-            <label class="switch">
-
-                <input
-                    type="checkbox"
-                    id="autoRefresh"
-                    checked
-                >
-
-                <span class="slider"></span>
-
-            </label>
-
-        </div>
-
-    </div>
-
-
-    <!-- SIGNAL -->
-
-    <div class="card">
-
-        <div class="scanner-status">
-
-            <span id="connectionStatus">
-                ● CONNECTING
-            </span>
-
-            <span id="lastUpdate">
-                --
-            </span>
-
-        </div>
-
-
-        <div class="signal-box">
-
-            <div class="asset"
-                 id="assetName">
-
-                Select an asset
-
-            </div>
-
-
-            <div class="timeframe"
-                 id="tfName">
-
-                Select timeframe
-
-            </div>
-
-
-            <div id="signal"
-                 class="signal wait">
-
-                SCANNING
-
-            </div>
-
-
-            <div class="confidence"
-                 id="confidence">
-
-                Confidence: --
-
-            </div>
-
-
-            <div class="status"
-                 id="status">
-
-                Waiting for market data...
-
-            </div>
-
-
-            <div class="timer"
-                 id="timer">
-
-                Candle: --
-
-            </div>
-
-
-            <div class="progress">
-
-                <div
-                    class="progress-bar"
-                    id="progressBar">
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <!-- MAIN METRICS -->
-
-        <div class="section-title"
-             style="margin-top:15px;">
-
-            📊 MARKET ANALYSIS
-
-        </div>
-
-
-        <div class="grid">
-
-            <div class="metric">
-                <div class="metric-name">
-                    PRICE
-                </div>
-                <div class="metric-value"
-                     id="price">
-                    --
-                </div>
-            </div>
-
-
-            <div class="metric">
-                <div class="metric-name">
-                    TREND
-                </div>
-                <div class="metric-value"
-                     id="trend">
-                    --
-                </div>
-            </div>
-
-
-            <div class="metric">
-                <div class="metric-name">
-                    EMA 20
-                </div>
-                <div class="metric-value"
-                     id="ema20">
-                    --
-                </div>
-            </div>
-
-
-            <div class="metric">
-                <div class="metric-name">
-                    EMA 50
-                </div>
-                <div class="metric-value"
-                     id="ema50">
-                    --
-                </div>
-            </div>
-
-
-            <div class="metric">
-                <div class="metric-name">
-                    EMA 200
-                </div>
-                <div class="metric-value"
-                     id="ema200">
-                    --
-                </div>
-            </div>
-
-
-            <div class="metric">
-                <div class="metric-name">
-                    RSI 14
-                </div>
-                <div class="metric-value"
-                     id="rsi">
-                    --
-                </div>
-            </div>
-
-
-            <div class="metric">
-                <div class="metric-name">
-                    BOLLINGER POSITION
-                </div>
-                <div class="metric-value"
-                     id="bollingerPosition">
-                    --
-                </div>
-            </div>
-
-
-            <div class="metric">
-                <div class="metric-name">
-                    STRENGTH
-                </div>
-                <div class="metric-value"
-                     id="strength">
-                    --
-                </div>
-            </div>
-
-
-            <div class="metric">
-                <div class="metric-name">
-                    SUPPORT
-                </div>
-                <div class="metric-value"
-                     id="support">
-                    --
-                </div>
-            </div>
-
-
-            <div class="metric">
-                <div class="metric-name">
-                    RESISTANCE
-                </div>
-                <div class="metric-value"
-                     id="resistance">
-                    --
-                </div>
-            </div>
-
-        </div>
-
-
-        <!-- BOLLINGER VALUES -->
-
-        <div class="scanner-grid">
-
-            <div class="metric">
-
-                <div class="metric-name">
-                    BB LOWER
-                </div>
-
-                <div class="metric-value"
-                     id="bbLower">
-                    --
-                </div>
-
-            </div>
-
-
-            <div class="metric">
-
-                <div class="metric-name">
-                    BB MIDDLE
-                </div>
-
-                <div class="metric-value"
-                     id="bbMiddle">
-                    --
-                </div>
-
-            </div>
-
-
-            <div class="metric">
-
-                <div class="metric-name">
-                    BB UPPER
-                </div>
-
-                <div class="metric-value"
-                     id="bbUpper">
-                    --
-                </div>
-
-            </div>
-
-
-            <div class="metric">
-
-                <div class="metric-name">
-                    BB WIDTH
-                </div>
-
-                <div class="metric-value"
-                     id="bbWidth">
-                    --
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <!-- CANDLE -->
-
-        <div class="candle-box">
-
-            <div class="reason-title">
-                🕯️ RUNNING CANDLE
-            </div>
-
-
-            <div class="candle-row">
-
-                <div class="candle-item">
-
-                    <div class="candle-label">
-                        OPEN
-                    </div>
-
-                    <div class="candle-value"
-                         id="cOpen">
-                        --
-                    </div>
-
-                </div>
-
-
-                <div class="candle-item">
-
-                    <div class="candle-label">
-                        HIGH
-                    </div>
-
-                    <div class="candle-value"
-                         id="cHigh">
-                        --
-                    </div>
-
-                </div>
-
-
-                <div class="candle-item">
-
-                    <div class="candle-label">
-                        LOW
-                    </div>
-
-                    <div class="candle-value"
-                         id="cLow">
-                        --
-                    </div>
-
-                </div>
-
-
-                <div class="candle-item">
-
-                    <div class="candle-label">
-                        CLOSE
-                    </div>
-
-                    <div class="candle-value"
-                         id="cClose">
-                        --
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div
-                class="status"
-                style="margin-top:10px;"
-                id="candleSource">
-
-                Candle source: --
-
-            </div>
-
-        </div>
-
-
-        <!-- REASONS -->
-
-        <div class="scanner-grid"
-             style="margin-top:12px;">
-
-            <div class="reason-box">
-
-                <div class="reason-title bullish">
-                    🟢 CALL FACTORS
-                </div>
-
-                <div id="bullishReasons">
-                    --
-                </div>
-
-            </div>
-
-
-            <div class="reason-box">
-
-                <div class="reason-title bearish">
-                    🔴 PUT FACTORS
-                </div>
-
-                <div id="bearishReasons">
-                    --
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <button class="refresh"
-                onclick="getSignal()">
-
-            🔄 REFRESH SCANNER
-
-        </button>
-
-    </div>
-
-
-    <div class="footer">
-
-        AI SIGNAL PRO • Live market analysis tool<br>
-
-        Twelve Data market data is used for analysis.<br>
-
-        OTC mode is proxy data, not a direct Quotex OTC feed.<br>
-
-        Signals are analytical estimates and are not guaranteed trading results.
-
-    </div>
-
-</div>
-
-
-<script>
-
-    const realPairs =
-        {{ real_pairs | tojson }};
-
-    const otcPairs =
-        {{ otc_pairs | tojson }};
-
-
-    const pairSelect =
-        document.getElementById("pair");
-
-    const marketType =
-        document.getElementById("marketType");
-
-
-    let requestInProgress = false;
-
-    let autoTimer = null;
-
-
-    // ========================================================
-    // MARKET SELECT
-    // ========================================================
-
-    function changeMarket() {
-
-        pairSelect.innerHTML = "";
-
-        const list =
-            marketType.value === "otc"
-                ? otcPairs
-                : realPairs;
-
-
-        if (!list || !list.length) {
-
-            const option =
-                document.createElement("option");
-
-            option.value = "";
-
-            option.textContent =
-                "No assets available";
-
-            pairSelect.appendChild(option);
-
-            return;
-        }
-
-
-        list.forEach(function(pair) {
-
-            const option =
-                document.createElement("option");
-
-            option.value = pair;
-
-            option.textContent = pair;
-
-            pairSelect.appendChild(option);
-
-        });
-
-    }
-
-
-    // ========================================================
-    // NUMBER
-    // ========================================================
-
-    function numberValue(value) {
-
-        if (
-            value === null ||
-            value === undefined ||
-            value === ""
-        ) {
-            return "--";
-        }
-
-
-        const number =
-            Number(value);
-
-
-        if (
-            Number.isFinite(number)
-        ) {
-
-            return number.toFixed(5);
-
-        }
-
-
-        return String(value);
-
-    }
-
-
-    // ========================================================
-    // ELEMENT
-    // ========================================================
-
-    function setText(id, value) {
-
-        const element =
-            document.getElementById(id);
-
-        if (!element) {
-            return;
-        }
-
-        element.textContent =
-            value === null ||
-            value === undefined
-                ? "--"
-                : String(value);
-
-    }
-
-
-    // ========================================================
-    // REASONS
-    // ========================================================
-
-    function showReasons(id, reasons) {
-
-        const element =
-            document.getElementById(id);
-
-
-        element.innerHTML = "";
-
-
-        if (
-            !Array.isArray(reasons) ||
-            reasons.length === 0
-        ) {
-
-            element.textContent =
-                "No strong factor.";
-
-            return;
-
-        }
-
-
-        reasons.forEach(function(reason) {
-
-            const div =
-                document.createElement("div");
-
-            div.className =
-                "reason";
-
-            div.textContent =
-                "• " + reason;
-
-            element.appendChild(div);
-
-        });
-
-    }
-
-
-    // ========================================================
-    // ERROR
-    // ========================================================
-
-    function showError(message) {
-
-        setText(
-            "signal",
-            "ERROR"
-        );
-
-
-        const signalElement =
-            document.getElementById("signal");
-
-
-        signalElement.className =
-            "signal put";
-
-
-        setText(
-            "confidence",
-            "Confidence: --"
-        );
-
-
-        document.getElementById(
-            "status"
-        ).innerHTML =
-            '<span class="error">' +
-            message +
-            '</span>';
-
-
-        setText(
-            "connectionStatus",
-            "● ERROR"
-        );
-
-    }
-
-
-    // ========================================================
-    // SCAN
-    // ========================================================
-
-    async function getSignal() {
-
-        if (requestInProgress) {
-            return;
-        }
-
-
-        const pair =
-            pairSelect.value;
-
-
-        const timeframe =
-            document.getElementById(
-                "timeframe"
-            ).value;
-
-
-        if (!pair) {
-
-            showError(
-                "Please select an asset."
-            );
-
-            return;
-        }
-
-
-        requestInProgress = true;
-
-
-        setText(
-            "signal",
-            "SCANNING..."
-        );
-
-
-        const signalElement =
-            document.getElementById(
-                "signal"
-            );
-
-
-        signalElement.className =
-            "signal loading";
-
-
-        setText(
-            "confidence",
-            "Confidence: --"
-        );
-
-
-        setText(
-            "status",
-            "Scanning latest candles..."
-        );
-
-
-        try {
-
-            /*
-             IMPORTANT:
-             Backend expects symbol=,
-             not pair=
-            */
-
-            const url =
-                "/api/signal?symbol=" +
-                encodeURIComponent(pair) +
-                "&timeframe=" +
-                encodeURIComponent(timeframe);
-
-
-            const response =
-                await fetch(
-                    url,
-                    {
-                        method: "GET",
-                        cache: "no-store"
-                    }
-                );
-
-
-            const data =
-                await response.json();
-
-
-            if (!response.ok) {
-
-                throw new Error(
-                    data.error ||
-                    "Scanner server error."
-                );
-
-            }
-
-
-            if (data.success === false) {
-
-                throw new Error(
-                    data.error ||
-                    "Market scanner error."
-                );
-
-            }
-
-
-            updateSignal(data);
-
-
-        }
-
-        catch (error) {
-
-            console.error(error);
-
-            showError(
-                error.message ||
-                "Unable to scan market."
-            );
-
-        }
-
-        finally {
-
-            requestInProgress = false;
-
-        }
-
-    }
-
-
-    // ========================================================
-    // UPDATE UI
-    // ========================================================
-
-    function updateSignal(data) {
-
-        const signal =
-            String(
-                data.signal ||
-                data.direction ||
-                "WAIT"
-            ).toUpperCase();
-
-
-        const direction =
-            String(
-                data.direction ||
-                ""
-            ).toUpperCase();
-
-
-        // ----------------------------------------------------
-        // SIGNAL
-        // ----------------------------------------------------
-
-        setText(
-            "signal",
-            signal +
-            (
-                direction &&
-                direction !== signal
-                    ? " / " + direction
-                    : ""
-            )
-        );
-
-
-        const signalElement =
-            document.getElementById(
-                "signal"
-            );
-
-
-        signalElement.className =
-            "signal";
-
-
-        if (
-            signal === "CALL" ||
-            signal.includes("CALL") ||
-            signal === "UP"
-        ) {
-
-            signalElement.classList.add(
-                "call"
-            );
-
-        }
-
-        else if (
-            signal === "PUT" ||
-            signal.includes("PUT") ||
-            signal === "DOWN"
-        ) {
-
-            signalElement.classList.add(
-                "put"
-            );
-
-        }
-
-        else {
-
-            signalElement.classList.add(
-                "wait"
-            );
-
-        }
-
-
-        // ----------------------------------------------------
-        // BASIC
-        // ----------------------------------------------------
-
-        setText(
-            "assetName",
-            data.symbol ||
-            data.market_symbol ||
-            pairSelect.value
-        );
-
-
-        setText(
-            "tfName",
-            (
-                data.timeframe ||
-                document.getElementById(
-                    "timeframe"
-                ).value
-            ) + " MIN"
-        );
-
-
-        setText(
-            "confidence",
-            "Confidence: " +
-            (
-                data.confidence !== undefined
-                    ? data.confidence + "%"
-                    : "--"
-            )
-        );
-
-
-        setText(
-            "price",
-            numberValue(data.price)
-        );
-
-
-        setText(
-            "trend",
-            data.trend
-        );
-
-
-        setText(
-            "strength",
-            data.strength !== undefined
-                ? data.strength + "%"
-                : "--"
-        );
-
-
-        setText(
-            "rsi",
-            numberValue(data.rsi14)
-        );
-
-
-        // ----------------------------------------------------
-        // EMA
-        // ----------------------------------------------------
-
-        const ema =
-            data.ema || {};
-
-
-        setText(
-            "ema20",
-            numberValue(ema.ema20)
-        );
-
-
-        setText(
-            "ema50",
-            numberValue(ema.ema50)
-        );
-
-
-        setText(
-            "ema200",
-            numberValue(ema.ema200)
-        );
-
-
-        // ----------------------------------------------------
-        // BOLLINGER
-        // ----------------------------------------------------
-
-        const bb =
-            data.bollinger || {};
-
-
-        setText(
-            "bollingerPosition",
-            data.bollinger_position
-        );
-
-
-        setText(
-            "bbLower",
-            numberValue(bb.lower)
-        );
-
-
-        setText(
-            "bbMiddle",
-            numberValue(bb.middle)
-        );
-
-
-        setText(
-            "bbUpper",
-            numberValue(bb.upper)
-        );
-
-
-        setText(
-            "bbWidth",
-            numberValue(bb.width)
-        );
-
-
-        // ----------------------------------------------------
-        // SUPPORT / RESISTANCE
-        // ----------------------------------------------------
-
-        setText(
-            "support",
-            numberValue(data.support)
-        );
-
-
-        setText(
-            "resistance",
-            numberValue(data.resistance)
-        );
-
-
-        // ----------------------------------------------------
-        // RUNNING CANDLE
-        // ----------------------------------------------------
-
-        const candle =
-            data.running_candle || {};
-
-
-        setText(
-            "cOpen",
-            numberValue(candle.open)
-        );
-
-
-        setText(
-            "cHigh",
-            numberValue(candle.high)
-        );
-
-
-        setText(
-            "cLow",
-            numberValue(candle.low)
-        );
-
-
-        setText(
-            "cClose",
-            numberValue(candle.close)
-        );
-
-
-        setText(
-            "candleSource",
-            "Candle source: " +
-            (
-                data.running_candle_source ||
-                candle.source ||
-                "--"
-            )
-        );
-
-
-        // ----------------------------------------------------
-        // TIMING
-        // ----------------------------------------------------
-
-        const elapsed =
-            Number(
-                data.elapsed_seconds || 0
-            );
-
-
-        const remaining =
-            Number(
-                data.remaining_seconds || 0
-            );
-
-
-        setText(
-            "timer",
-            "Candle: " +
-            elapsed.toFixed(1) +
-            "s elapsed • " +
-            Math.max(
-                remaining,
-                0
-            ).toFixed(1) +
-            "s remaining"
-        );
-
-
-        const progress =
-            Math.min(
-                Math.max(
-                    elapsed / 60 * 100,
-                    0
-                ),
-                100
-            );
-
-
-        document.getElementById(
-            "progressBar"
-        ).style.width =
-            progress + "%";
-
-
-        // ----------------------------------------------------
-        // STATUS
-        // ----------------------------------------------------
-
-        let statusText =
-            data.market_status ||
-            "LIVE MARKET";
-
-
-        if (
-            data.first_30_seconds
-        ) {
-
-            statusText +=
-                " • FIRST 30 SECONDS";
-
-        }
-
-
-        setText(
-            "status",
-            statusText
-        );
-
-
-        // ----------------------------------------------------
-        // CONNECTION
-        // ----------------------------------------------------
-
-        setText(
-            "connectionStatus",
-            "● LIVE"
-        );
-
-
-        const updateTime =
-            data.updated_at
-                ? new Date(
-                    data.updated_at
-                  ).toLocaleTimeString()
-                : new Date()
-                    .toLocaleTimeString();
-
-
-        setText(
-            "lastUpdate",
-            "Updated " +
-            updateTime
-        );
-
-
-        // ----------------------------------------------------
-        // REASONS
-        // ----------------------------------------------------
-
-        showReasons(
-            "bullishReasons",
-            data.bullish_reasons
-        );
-
-
-        showReasons(
-            "bearishReasons",
-            data.bearish_reasons
-        );
-
-    }
-
-
-    // ========================================================
-    // AUTO REFRESH
-    // ========================================================
-
-    function startAutoRefresh() {
-
-        if (autoTimer) {
-
-            clearInterval(
-                autoTimer
-            );
-
-        }
-
-
-        autoTimer =
-            setInterval(
-                function() {
-
-                    const enabled =
-                        document.getElementById(
-                            "autoRefresh"
-                        ).checked;
-
-
-                    if (
-                        enabled &&
-                        !requestInProgress
-                    ) {
-
-                        getSignal();
-
-                    }
-
-                },
-                15000
-            );
-
-    }
-
-
-    // ========================================================
-    // INIT
-    // ========================================================
-
-    changeMarket();
-
-    startAutoRefresh();
-
-
-    // First scan after page load
-
-    setTimeout(
-        function() {
-
-            getSignal();
-
-        },
-        700
-    );
-
-
-</script>
-
-</body>
-
-</html>
+            font-size: 
