@@ -7,7 +7,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.Gravity;
-import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -59,7 +58,6 @@ public class MainActivity extends Activity {
 
         Button floatingButton = new Button(this);
         floatingButton.setText("AI SCAN");
-        floatingButton.setTextSize(14);
 
         WindowManager.LayoutParams params =
                 new WindowManager.LayoutParams(
@@ -73,9 +71,9 @@ public class MainActivity extends Activity {
         params.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
         params.y = 120;
 
-        floatingButton.setOnClickListener(v -> {
-            floatingButton.setText("SCANNING...");
-        });
+        floatingButton.setOnClickListener(v ->
+                floatingButton.setText("SCANNING...")
+        );
 
         windowManager.addView(floatingButton, params);
     }
